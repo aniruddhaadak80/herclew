@@ -1,0 +1,45 @@
+name: Core Agent CI
+
+on:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'core-agent/**'
+      - '.github/workflows/core-agent-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'core-agent/**'
+      - '.github/workflows/core-agent-ci.yml'
+
+jobs:
+  test:
+    name: Lint & Test Python Core
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Run Ruff Lint
+        run: |
+          uv pip install ruff
+          ruff check core-agent/ --select PLW1514
+
+      - name: Install Dependencies
+        run: |
+          cd core-agent
+          uv pip install -e ".[dev]"
+
+      - name: Run Unit Tests
+        run: |
+          cd core-agent
+          pytest tests/unit -m "not integration" --timeout=30

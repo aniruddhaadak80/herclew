@@ -1,0 +1,48 @@
+name: Gateway Node CI
+
+on:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'gateway-node/**'
+      - '.github/workflows/gateway-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'gateway-node/**'
+      - '.github/workflows/gateway-ci.yml'
+
+jobs:
+  test:
+    name: Build & Test Node Gateway
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+          cache-dependency-path: 'gateway-node/pnpm-lock.yaml'
+
+      - name: Install Dependencies
+        run: |
+          cd gateway-node
+          pnpm install
+
+      - name: Run Build
+        run: |
+          cd gateway-node
+          pnpm build
+
+      - name: Run Tests
+        run: |
+          cd gateway-node
+          pnpm test run --passWithNoTests
