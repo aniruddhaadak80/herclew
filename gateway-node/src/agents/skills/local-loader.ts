@@ -84,19 +84,40 @@ function loadSingleSkillDirectory(params: {
   };
 }
 
-function listCandidateSkillDirs(dir: string): string[] {
-  try {
-    return fs
-      .readdirSync(dir, { withFileTypes: true })
-      .filter(
-        (entry) =>
-          entry.isDirectory() && !entry.name.startsWith(".") && entry.name !== "node_modules",
-      )
-      .map((entry) => path.join(dir, entry.name))
-      .sort((left, right) => left.localeCompare(right));
-  } catch {
-    return [];
+function listCandidateSkillDirs(dir: string, maxDepth: number = 3): string[] {
+  const results: string[] = [];
+
+  function walk(current: string, depth: number): void {
+    if (depth > maxDepth) {
+      return;
+    }
+    try {
+      const entries = fs.readdirSync(current, { withFileTypes: true });
+      for (const entry of entries) {
+        if (
+          !entry.isDirectory() ||
+          entry.name.startsWith(".") ||
+          entry.name === "node_modules"
+        ) {
+          continue;
+        }
+        const fullPath = path.join(current, entry.name);
+        // If this directory contains SKILL.md, it's a skill directory — collect it.
+        // Otherwise, recurse deeper to find categorized skill subdirectories.
+        try {
+          fs.accessSync(path.join(fullPath, "SKILL.md"), fs.constants.F_OK);
+          results.push(fullPath);
+        } catch {
+          walk(fullPath, depth + 1);
+        }
+      }
+    } catch {
+      /* skip unreadable directories */
+    }
   }
+
+  walk(dir, 1);
+  return results.sort((left, right) => left.localeCompare(right));
 }
 
 export function loadSkillsFromDirSafe(params: { dir: string; source: string; maxBytes?: number }): {

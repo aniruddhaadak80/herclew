@@ -44,11 +44,13 @@ graph TD
     subgraph Core [Herclew Core Agent Python]
         SessionManager -->|JSON-RPC / WebSockets| AgentLoop[AIAgent Loop]
         AgentLoop -->|Dialectic Analysis| Memory[(Pluggable Memory: Honcho/SQLite)]
-        AgentLoop -->|Skill Curator| SkillsRegistry[Autonomous Skills Registry]
+        AgentLoop -->|Skill Curator| SkillsRegistry[70+ Autonomous Skills]
         AgentLoop -->|Execution Approval| Approvals{Command Gating}
         
         Approvals -->|Approved| Sandbox[Containerized Sandbox: Docker/SSH]
         Sandbox -->|Run Tools| CLI[Shell / Code / Web Tools]
+        
+        Cron[24/7 Automation Daemon] -->|Triggers| AgentLoop
     end
 
     CLI -->|Tool Results| AgentLoop
@@ -66,6 +68,7 @@ graph TD
 | **Integrations** | CLI & basic Slack/Telegram | 📱 25+ channels (WhatsApp, Signal, iMessage, Discord, Matrix...) | **Universal platform coverage with voice & canvas** |
 | **Execution** | Local PTY, Docker, Modal, Vercel | Docker sandboxes, SSH | **Zero-trust sandboxed multi-platform tool execution** |
 | **Voice / Media** | Faster-Whisper, TTS providers | macOS Voice Wake, MLX-TTS, Android continuous voice | **Continuous voice conversations over active chat channels** |
+| **Ecosystem** | 38+ LLM Providers (Groq, Together, etc.) | Visual Workflow Builder | **Massive ecosystem with 70+ categorized skills** |
 
 ---
 
