@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: herclew-core
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: herclew-core
+  template:
+    metadata:
+      labels:
+        app: herclew-core
+    spec:
+      containers:
+      - name: core
+        image: herclew-core:latest

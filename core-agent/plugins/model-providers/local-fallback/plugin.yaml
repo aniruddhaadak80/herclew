@@ -1,0 +1,5 @@
+name: local-fallback
+kind: model-provider
+version: 1.0.0
+description: Native integration with vLLM to spin up model weights dynamically if internet drops.
+author: Herclew
