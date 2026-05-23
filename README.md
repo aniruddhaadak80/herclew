@@ -69,6 +69,22 @@ graph TD
 | **Execution** | Local PTY, Docker, Modal, Vercel | Docker sandboxes, SSH | **Zero-trust sandboxed multi-platform tool execution** |
 | **Voice / Media** | Faster-Whisper, TTS providers | macOS Voice Wake, MLX-TTS, Android continuous voice | **Continuous voice conversations over active chat channels** |
 | **Ecosystem** | 38+ LLM Providers (Groq, Together, etc.) | Visual Workflow Builder | **Massive ecosystem with 70+ categorized skills** |
+| **Advanced Intelligence** | Multi-Agent Swarm (Coder, Researcher) | ChromaDB Vector Memory (RAG) | **Specialized agent delegation & infinite memory recall** |
+| **Management** | Centralized `docker-compose` setup | Admin Web Dashboard (React/Vite) | **1-click universal deployment & live visual dashboard** |
+
+---
+
+## 🚀 Quick Start (Phase 3 Universal Deployment)
+
+Herclew can now be deployed natively using **Docker Compose**. This will orchestrate the Node.js Gateway, Python Core Agent, and the React Admin Dashboard automatically.
+
+```bash
+# Start the entire Herclew ecosystem (Gateway + Core Agent + Admin UI)
+docker compose up -d
+
+# The Admin Dashboard will be available at:
+# http://localhost:5173
+```
 
 ---
 

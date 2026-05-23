@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  core-agent:
+    build:
+      context: ./core-agent
+      dockerfile: Dockerfile
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./core-agent/.hermes_memory:/root/.hermes_memory
+    networks:
+      - herclew-net
+    ports:
+      - "8000:8000"
+
+  gateway-node:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - ./gateway-node:/app
+    command: >
+      sh -c "npm install -g pnpm && pnpm install && pnpm gateway:watch"
+    environment:
+      - CORE_AGENT_URL=http://core-agent:8000
+    networks:
+      - herclew-net
+    ports:
+      - "3000:3000"
+
+  admin-ui:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - ./admin-ui:/app
+    command: >
+      sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    environment:
+      - VITE_GATEWAY_URL=http://localhost:3000
+    networks:
+      - herclew-net
+    ports:
+      - "5173:5173"
+
+networks:
+  herclew-net:
+    driver: bridge
