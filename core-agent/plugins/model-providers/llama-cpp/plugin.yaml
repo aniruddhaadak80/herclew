@@ -1,0 +1,5 @@
+name: llama-cpp
+kind: model-provider
+version: 1.0.0
+description: Native bindings to run GGUF quantized models directly in-memory.
+author: Herclew
