@@ -143,6 +143,13 @@ Herclew integrates advanced event-driven orchestration and reasoning logic from 
 4. **Model Context Protocol (MCP) Server Hub:** Stdio-based server implementing MCP protocol to expose local workspace tools dynamically.
 5. **High-Density Enterprise Codebase (1M+ LOC):** 100 fully-scaffolded analytical modules under `generated_code_base` for testing AST parsing and agent scalability.
 
+
+## 👑 Phase 8: The Singularity Convergence (PTY & Structured AI - Latest!)
+Herclew brings interactive terminals and output validation frameworks to absolute completion:
+1. **Interactive Node PTY Terminal (`pty_server.ts`):** Spawns native cross-platform terminal processes (PowerShell on Windows, Bash/Sh on Unix) and routes inputs and outputs to connection interfaces.
+2. **Schema-Constrained Generator (`structured_executor.py`):** Structured output engine using Pydantic templates and parsing with self-repair loops for reliable tool integrations.
+3. **RLHF Preference Logger (`preference_logger.py`):** Logs conversation preferences, chosen solutions, and rejected paths in DPO-compatible JSONL formats for alignment fine-tuning.
+
 ---
 
 ## 🚀 Quick Start (Universal Deployment)
