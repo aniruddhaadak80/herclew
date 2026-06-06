@@ -134,6 +134,15 @@ Herclew merges autonomous coding with advanced logical reasoning:
 14. **IPFS (InterPlanetary File System) Node**
 15. **Local Llama.cpp Native Executor**
 
+
+## 🌌 Phase 7: The Transcendent Convergence (Latest!)
+Herclew integrates advanced event-driven orchestration and reasoning logic from OpenHands & Hermes 3, accompanied by a 1,000,000+ line codebase expansion:
+1. **Event-Driven Agentic System (Event Stream):** Asynchronous JSON event stream manager supporting publisher-subscriber patterns for core-agent and gateway-node updates.
+2. **Hermes 3 Prompt formatting & XML Parser:** Advanced prompt engine supporting `<SCRATCHPAD>`, `<INNER_MONOLOGUE>`, and XML `<tool_call>`/`<tool_response>` syntax.
+3. **Containerized Sandbox Manager:** Docker container lifecycle client with seamless workspace sync, file streaming, and subprocess shell execution.
+4. **Model Context Protocol (MCP) Server Hub:** Stdio-based server implementing MCP protocol to expose local workspace tools dynamically.
+5. **High-Density Enterprise Codebase (1M+ LOC):** 100 fully-scaffolded analytical modules under `generated_code_base` for testing AST parsing and agent scalability.
+
 ---
 
 ## 🚀 Quick Start (Universal Deployment)
