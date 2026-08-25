@@ -1771,7 +1771,7 @@
     "@clack/prompts": "1.4.0",
     "@earendil-works/pi-agent-core": "0.75.4",
     "@earendil-works/pi-ai": "0.75.4",
-    "@earendil-works/pi-coding-agent": "0.75.4",
+    "@earendil-works/pi-coding-agent": "0.84.3",
     "@earendil-works/pi-tui": "0.75.4",
     "@google/genai": "2.5.0",
     "@grammyjs/runner": "2.0.3",
@@ -1797,23 +1797,23 @@
     "jszip": "3.10.1",
     "kysely": "0.29.2",
     "linkedom": "0.18.12",
-    "markdown-it": "14.1.1",
+    "markdown-it": "14.3.0",
     "node-edge-tts": "1.2.10",
     "openai": "6.38.0",
-    "pdfjs-dist": "5.7.284",
+    "pdfjs-dist": "5.8.369",
     "playwright-core": "1.60.0",
     "qrcode": "1.5.4",
     "quickjs-wasi": "2.2.0",
-    "tar": "7.5.15",
+    "tar": "7.5.22",
     "tokenjuice": "0.7.1",
     "tree-sitter-bash": "0.25.1",
     "tslog": "4.10.2",
     "typebox": "1.1.38",
     "typescript": "6.0.3",
-    "undici": "8.3.0",
+    "undici": "8.10.0",
     "web-push": "3.6.7",
     "web-tree-sitter": "0.26.9",
-    "ws": "8.20.1",
+    "ws": "8.21.3",
     "yaml": "2.9.0",
     "zod": "4.4.3"
   },
@@ -1843,7 +1843,7 @@
     "vitest": "4.1.7"
   },
   "optionalDependencies": {
-    "sharp": "0.34.5",
+    "sharp": "0.35.3",
     "sqlite-vec": "0.1.9"
   },
   "overrides": {
@@ -1852,7 +1852,8 @@
     "follow-redirects": "1.16.0",
     "ip-address": "10.2.0",
     "node-domexception": "npm:@nolyfill/domexception@1.0.28",
-    "uuid": "14.0.0"
+    "uuid": "14.0.0",
+    "dompurify": "^3.2.6"
   },
   "engines": {
     "node": ">=22.19.0"
