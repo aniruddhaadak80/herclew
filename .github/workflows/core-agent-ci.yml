@@ -11,11 +11,15 @@ on:
     paths:
       - 'core-agent/**'
       - '.github/workflows/core-agent-ci.yml'
+  workflow_dispatch:
 
 jobs:
   test:
     name: Lint & Test Python Core
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: core-agent
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -23,23 +27,23 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
-          version: "latest"
           enable-cache: true
 
-      - name: Set up Python
-        run: uv python install 3.11
+      # `uv pip install` needs an existing virtualenv, so the old steps failed
+      # before reaching the tests. `uv sync` creates and populates .venv from
+      # the committed uv.lock, which also makes the run reproducible.
+      #
+      # The test suite imports fastapi (web) and agent-client-protocol (acp)
+      # at module import time, so those extras must be present or pytest
+      # aborts during collection.
+      - name: Install Dependencies
+        run: uv sync --frozen --extra dev --extra acp --extra web
 
       - name: Run Ruff Lint
-        run: |
-          uv pip install ruff
-          ruff check core-agent/ --select PLW1514
+        run: uv run --frozen ruff check . --select PLW1514
 
-      - name: Install Dependencies
-        run: |
-          cd core-agent
-          uv pip install -e ".[dev]"
-
+      # pytest options (testpaths, markers, -n auto, --timeout) all come from
+      # [tool.pytest.ini_options]; the old step pointed at tests/unit, which
+      # does not exist in this repository.
       - name: Run Unit Tests
-        run: |
-          cd core-agent
-          pytest tests/unit -m "not integration" --timeout=30
+        run: uv run --frozen pytest

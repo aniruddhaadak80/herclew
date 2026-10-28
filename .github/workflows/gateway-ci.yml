@@ -11,38 +11,39 @@ on:
     paths:
       - 'gateway-node/**'
       - '.github/workflows/gateway-ci.yml'
+  workflow_dispatch:
 
 jobs:
   test:
     name: Build & Test Node Gateway
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gateway-node
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # packageManager in gateway-node/package.json pins pnpm 11.1.0. Asking
+      # action-setup for 9 made every `pnpm` call fail the version check.
       - name: Install pnpm
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11.1.0
+          run_install: false
 
+      # No `cache: pnpm` here: pnpm-lock.yaml is gitignored in this repo, so
+      # the cache action would fail on a path that never exists.
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'pnpm'
-          cache-dependency-path: 'gateway-node/pnpm-lock.yaml'
 
       - name: Install Dependencies
-        run: |
-          cd gateway-node
-          pnpm install
+        run: pnpm install --no-frozen-lockfile
 
       - name: Run Build
-        run: |
-          cd gateway-node
-          pnpm build
+        run: pnpm build
 
       - name: Run Tests
-        run: |
-          cd gateway-node
-          pnpm test run --passWithNoTests
+        run: pnpm test

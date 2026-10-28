@@ -3,8 +3,11 @@ import json
 import uuid
 from typing import Dict, Any, List, Callable
 
+
 class Event:
-    def __init__(self, name: str, source: str, event_type: str, payload: Dict[str, Any]):
+    def __init__(
+        self, name: str, source: str, event_type: str, payload: Dict[str, Any]
+    ):
         self.id = str(uuid.uuid4())
         self.timestamp = time.time()
         self.name = name
@@ -19,20 +22,21 @@ class Event:
             "name": self.name,
             "source": self.source,
             "event_type": self.event_type,
-            "payload": self.payload
+            "payload": self.payload,
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Event':
+    def from_dict(cls, data: Dict[str, Any]) -> "Event":
         event = cls(
             name=data["name"],
             source=data["source"],
             event_type=data["event_type"],
-            payload=data["payload"]
+            payload=data["payload"],
         )
         event.id = data["id"]
         event.timestamp = data["timestamp"]
         return event
+
 
 class EventStream:
     def __init__(self):
@@ -46,12 +50,14 @@ class EventStream:
             if not event_types or event.event_type in event_types:
                 sub["callback"](event)
 
-    def subscribe(self, callback: Callable[[Event], None], event_types: List[str] = None) -> str:
+    def subscribe(
+        self, callback: Callable[[Event], None], event_types: List[str] = None
+    ) -> str:
         sub_id = str(uuid.uuid4())
         self.subscribers.append({
             "id": sub_id,
             "callback": callback,
-            "event_types": event_types
+            "event_types": event_types,
         })
         return sub_id
 
@@ -62,12 +68,12 @@ class EventStream:
         return [e.to_dict() for e in self.events]
 
     def save_to_json(self, file_path: str) -> None:
-        with open(file_path, "w") as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             json.dump(self.get_history(), f, indent=2)
 
     def load_from_json(self, file_path: str) -> None:
         try:
-            with open(file_path, "r") as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 self.events = [Event.from_dict(d) for d in data]
         except FileNotFoundError:
