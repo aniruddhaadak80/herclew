@@ -24,6 +24,7 @@ minimumReleaseAgeExclude:
   - "@hono/node-server"
   - "@mariozechner/*"
   - "@aws-sdk/core"
+  - "@smithy/*"
   - "@earendil-works/pi-agent-core"
   - "@earendil-works/pi-ai"
   - "@earendil-works/pi-coding-agent"
