@@ -23,7 +23,7 @@ minimumReleaseAgeExclude:
   - "@cloudflare/workers-types"
   - "@hono/node-server"
   - "@mariozechner/*"
-  - "@aws-sdk/core"
+  - "@aws-sdk/*"
   - "@smithy/*"
   - "@earendil-works/pi-agent-core"
   - "@earendil-works/pi-ai"
