@@ -23,7 +23,13 @@ pnpm-debug.log*
 .lerna/
 .nyc_output/
 gateway-node/dist/
+gateway-node/dist-runtime/
 gateway-node/ui/dist/
+gateway-node/.artifacts/
+gateway-node/packages/plugin-sdk/dist/
+gateway-node/extensions/canvas/src/host/a2ui/a2ui.bundle.js
+gateway-node/extensions/canvas/src/host/a2ui/.bundle.hash
+gateway-node/memory/
 .tsbuildinfo
 pnpm-lock.yaml
 
