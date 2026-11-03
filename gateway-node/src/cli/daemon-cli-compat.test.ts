@@ -82,4 +82,19 @@ describe("resolveLegacyDaemonCliAccessors", () => {
       runDaemonUninstall: "i",
     });
   });
+
+  it("resolves runner bundles that re-export a minified binding", () => {
+    // Shared chunks re-export the local binding under the public name:
+    // `export { t as runDaemonRestart } from "./lifecycle-<hash>.js"`.
+    const reexportBundle = `
+      export { t as runDaemonRestart, n as runDaemonStart, r as runDaemonStop, i as runDaemonUninstall } from "./lifecycle-Deo9EiJ2.js";
+    `;
+
+    expect(resolveLegacyDaemonCliRunnerAccessors(reexportBundle)).toEqual({
+      runDaemonRestart: "runDaemonRestart",
+      runDaemonStart: "runDaemonStart",
+      runDaemonStop: "runDaemonStop",
+      runDaemonUninstall: "runDaemonUninstall",
+    });
+  });
 });

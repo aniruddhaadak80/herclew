@@ -49,6 +49,39 @@ function parseExportAliases(bundleSource: string): Map<string, string> | null {
   return aliases;
 }
 
+/**
+ * Names a bundle actually exports, in export-name space.
+ *
+ * Shared chunks can re-export a minified local binding under its public name
+ * (`export { t as runDaemonRestart } from "..."`), which is the opposite shape
+ * from `export { runDaemonRestart as t }`. Callers need the name a namespace
+ * import exposes, so both directions have to be understood.
+ */
+function parseExportedNames(bundleSource: string): Set<string> | null {
+  const matches = [...bundleSource.matchAll(/export\s*\{([^}]+)\}\s*;?/g)];
+  if (matches.length === 0) {
+    return null;
+  }
+  const body = matches.at(-1)?.[1];
+  if (!body) {
+    return null;
+  }
+
+  const names = new Set<string>();
+  for (const chunk of body.split(",")) {
+    const spec = chunk.trim();
+    if (!spec) {
+      continue;
+    }
+    const parsed = spec.match(EXPORT_SPEC_RE);
+    if (!parsed) {
+      return null;
+    }
+    names.add(parsed[2] ?? parsed[1]);
+  }
+  return names;
+}
+
 function findRegisterContainerSymbol(bundleSource: string): string | null {
   return bundleSource.match(REGISTER_CONTAINER_RE)?.[1] ?? null;
 }
@@ -74,13 +107,21 @@ export function resolveLegacyDaemonCliRunnerAccessors(
   if (!aliases) {
     return null;
   }
+  const exportedNames = parseExportedNames(bundleSource);
+  if (!exportedNames) {
+    return null;
+  }
+  // Prefer the exported name when the bundle exports the public symbol
+  // directly; otherwise fall back to the local binding the alias points at.
+  const accessorFor = (name: LegacyDaemonCliRunnerExport) =>
+    exportedNames.has(name) ? name : aliases.get(name);
 
-  const runDaemonInstall = aliases.get("runDaemonInstall");
-  const runDaemonRestart = aliases.get("runDaemonRestart");
-  const runDaemonStart = aliases.get("runDaemonStart");
-  const runDaemonStatus = aliases.get("runDaemonStatus");
-  const runDaemonStop = aliases.get("runDaemonStop");
-  const runDaemonUninstall = aliases.get("runDaemonUninstall");
+  const runDaemonInstall = accessorFor("runDaemonInstall");
+  const runDaemonRestart = accessorFor("runDaemonRestart");
+  const runDaemonStart = accessorFor("runDaemonStart");
+  const runDaemonStatus = accessorFor("runDaemonStatus");
+  const runDaemonStop = accessorFor("runDaemonStop");
+  const runDaemonUninstall = accessorFor("runDaemonUninstall");
   if (
     !runDaemonInstall &&
     !runDaemonRestart &&
