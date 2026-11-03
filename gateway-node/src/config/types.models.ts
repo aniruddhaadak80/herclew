@@ -64,6 +64,9 @@ export const MODEL_THINKING_FORMATS = [
   "qwen",
   "qwen-chat-template",
   "zai",
+  "chat-template",
+  "string-thinking",
+  "ant-ling",
 ] as const satisfies readonly SupportedThinkingFormat[];
 
 export function isModelThinkingFormat(value: string): value is SupportedThinkingFormat {
