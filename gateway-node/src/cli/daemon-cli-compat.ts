@@ -45,6 +45,12 @@ function parseExportAliases(bundleSource: string): Map<string, string> | null {
     const original = parsed[1];
     const alias = parsed[2] ?? original;
     aliases.set(original, alias);
+    // Minified bundles export internal symbols under short names
+    // (`export { t as runDaemonRestart }`). Callers import the exported
+    // name, so make it resolvable directly as well.
+    if (alias !== original) {
+      aliases.set(alias, alias);
+    }
   }
   return aliases;
 }
