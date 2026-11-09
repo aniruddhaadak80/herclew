@@ -4,5 +4,10 @@
   "name": "Herclew Core Agent",
   "description": "Registers the Herclew Python reasoning core as a CLI backend.",
   "version": "1.0.0",
-  "main": "./index.ts"
+  "main": "./index.ts",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
 }
