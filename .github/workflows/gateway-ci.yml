@@ -45,5 +45,11 @@ jobs:
       - name: Run Build
         run: pnpm build
 
+      # Slack and WhatsApp are source-only bundled plugins (the build
+      # deliberately skips their dist entry), so point the suite at the source
+      # extensions tree the way a root checkout would resolve it.
       - name: Run Tests
+        env:
+          OPENCLAW_BUNDLED_PLUGINS_DIR: extensions
+          OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1"
         run: pnpm test

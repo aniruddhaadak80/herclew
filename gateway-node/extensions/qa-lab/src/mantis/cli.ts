@@ -1,175 +1,190 @@
 import type { Command } from "commander";
-import { collectString, qaCliAction } from "../cli-options.js";
+import { createLazyCliRuntimeLoader } from "../live-transports/shared/live-transport-cli.js";
+import type { MantisDesktopBrowserSmokeOptions } from "./desktop-browser-smoke.runtime.js";
+import type { MantisDiscordSmokeOptions } from "./discord-smoke.runtime.js";
+import type { MantisBeforeAfterOptions } from "./run.runtime.js";
+import type {
+  MantisSlackDesktopHydrateMode,
+  MantisSlackDesktopSmokeOptions,
+} from "./slack-desktop-smoke.runtime.js";
+import type {
+  MantisTelegramDesktopBuilderOptions,
+  MantisTelegramDesktopHydrateMode,
+} from "./telegram-desktop-builder.runtime.js";
+import type {
+  MantisVisualDriverOptions,
+  MantisVisualTaskOptions,
+  MantisVisualTaskVisionMode,
+} from "./visual-task.runtime.js";
 
-export type MantisDiscordSmokeOptions = {
-  repoRoot?: string;
-  outputDir?: string;
-  guildId?: string;
+type MantisCliRuntime = typeof import("./cli.runtime.js");
+
+const loadMantisCliRuntime = createLazyCliRuntimeLoader<MantisCliRuntime>(
+  () => import("./cli.runtime.js"),
+);
+
+async function runDiscordSmoke(opts: MantisDiscordSmokeOptions) {
+  const runtime = await loadMantisCliRuntime();
+  await runtime.runMantisDiscordSmokeCommand(opts);
+}
+
+async function runBeforeAfter(opts: MantisBeforeAfterOptions) {
+  const runtime = await loadMantisCliRuntime();
+  await runtime.runMantisBeforeAfterCommand(opts);
+}
+
+async function runDesktopBrowserSmoke(opts: MantisDesktopBrowserSmokeOptions) {
+  const runtime = await loadMantisCliRuntime();
+  await runtime.runMantisDesktopBrowserSmokeCommand(opts);
+}
+
+async function runSlackDesktopSmoke(opts: MantisSlackDesktopSmokeOptions) {
+  const runtime = await loadMantisCliRuntime();
+  await runtime.runMantisSlackDesktopSmokeCommand(opts);
+}
+
+async function runTelegramDesktopBuilder(opts: MantisTelegramDesktopBuilderOptions) {
+  const runtime = await loadMantisCliRuntime();
+  await runtime.runMantisTelegramDesktopBuilderCommand(opts);
+}
+
+async function runVisualDriver(opts: MantisVisualDriverOptions) {
+  const runtime = await loadMantisCliRuntime();
+  await runtime.runMantisVisualDriverCommand(opts);
+}
+
+async function runVisualTask(opts: MantisVisualTaskOptions) {
+  const runtime = await loadMantisCliRuntime();
+  await runtime.runMantisVisualTaskCommand(opts);
+}
+
+type MantisDiscordSmokeCommanderOptions = {
   channelId?: string;
-  tokenEnv?: string;
+  guildId?: string;
+  message?: string;
+  outputDir?: string;
+  repoRoot?: string;
+  skipPost?: boolean;
   tokenFile?: string;
   tokenFileEnv?: string;
-  message?: string;
-  skipPost?: boolean;
-  env?: NodeJS.ProcessEnv;
-  redactPublicMetadata?: boolean;
-  token?: string;
+  tokenEnv?: string;
 };
 
-export type MantisBeforeAfterOptions = {
-  transport?: string;
-  scenario?: string;
+type MantisBeforeAfterCommanderOptions = {
   baseline?: string;
   candidate?: string;
-  repoRoot?: string;
+  credentialRole?: string;
+  credentialSource?: string;
+  fast?: boolean;
   outputDir?: string;
   providerMode?: string;
-  credentialSource?: string;
-  credentialRole?: string;
-  fastMode?: boolean;
-  skipInstall?: boolean;
+  repoRoot?: string;
+  scenario?: string;
   skipBuild?: boolean;
-  commandRunner?: unknown;
-  now?: unknown;
-  signal?: AbortSignal;
+  skipInstall?: boolean;
+  transport?: string;
 };
 
-export type MantisDesktopBrowserSmokeOptions = {
-  repoRoot?: string;
-  outputDir?: string;
-  browserUrl?: string;
+type MantisDesktopBrowserSmokeCommanderOptions = {
   browserProfileArchiveEnv?: string;
   browserProfileDir?: string;
-  htmlFile?: string;
-  crabboxBin?: string;
-  provider?: string;
-  machineClass?: string;
-  leaseId?: string;
-  idleTimeout?: string;
-  ttl?: string;
-  videoDurationSeconds?: number;
-  keepLease?: boolean;
-  commandRunner?: unknown;
-  env?: NodeJS.ProcessEnv;
-  now?: unknown;
-};
-
-export type MantisSlackDesktopSmokeOptions = {
-  repoRoot?: string;
-  outputDir?: string;
-  crabboxBin?: string;
-  provider?: string;
-  machineClass?: string;
-  market?: string;
-  leaseId?: string;
-  freshPr?: string;
-  idleTimeout?: string;
-  ttl?: string;
-  keepLease?: boolean;
-  gatewaySetup?: boolean;
-  approvalCheckpoints?: boolean;
-  slackUrl?: string;
-  slackChannelId?: string;
-  providerMode?: string;
-  hydrateMode?: string;
-  primaryModel?: string;
-  alternateModel?: string;
-  scenarioIds?: string[];
-  credentialSource?: string;
-  credentialRole?: string;
-  fastMode?: boolean;
-  commandRunner?: unknown;
-  env?: NodeJS.ProcessEnv;
-  now?: unknown;
-};
-
-export type MantisVisualTaskOptions = {
-  repoRoot?: string;
-  outputDir?: string;
-  crabboxBin?: string;
-  provider?: string;
-  machineClass?: string;
-  leaseId?: string;
-  idleTimeout?: string;
-  ttl?: string;
-  keepLease?: boolean;
   browserUrl?: string;
-  duration?: string;
-  settleMs?: number;
-  visionMode?: string;
-  visionPrompt?: string;
-  visionModel?: string;
-  visionTimeoutMs?: number;
-  expectText?: string;
-  commandRunner?: unknown;
-  env?: NodeJS.ProcessEnv;
-};
-
-export type MantisVisualDriverOptions = MantisVisualTaskOptions;
-
-export type MantisTelegramDesktopBuilderOptions = {
-  repoRoot?: string;
-  outputDir?: string;
-  crabboxBin?: string;
-  provider?: string;
-  machineClass?: string;
-  leaseId?: string;
-  idleTimeout?: string;
-  ttl?: string;
-  keepLease?: boolean;
-  credentialSource?: string;
-  credentialRole?: string;
-  hydrateMode?: string;
-  telegramProfileArchiveEnv?: string;
-  telegramProfileDir?: string;
-  gatewaySetup?: boolean;
-};
-
-type MantisDiscordSmokeCommanderOptions = Omit<
-  MantisDiscordSmokeOptions,
-  "env" | "redactPublicMetadata" | "token"
->;
-
-type MantisBeforeAfterCommanderOptions = Omit<
-  MantisBeforeAfterOptions,
-  "commandRunner" | "fastMode" | "now"
-> & { fast?: boolean };
-
-type MantisDesktopBrowserSmokeCommanderOptions = Omit<
-  MantisDesktopBrowserSmokeOptions,
-  "commandRunner" | "env" | "now" | "videoDurationSeconds"
-> & {
   class?: string;
+  crabboxBin?: string;
+  htmlFile?: string;
+  idleTimeout?: string;
+  keepLease?: boolean;
+  leaseId?: string;
+  machineClass?: string;
+  outputDir?: string;
+  provider?: string;
+  repoRoot?: string;
+  ttl?: string;
   videoDuration?: string;
 };
 
-type MantisSlackDesktopSmokeCommanderOptions = Omit<
-  MantisSlackDesktopSmokeOptions,
-  "alternateModel" | "commandRunner" | "env" | "fastMode" | "now" | "primaryModel" | "scenarioIds"
-> & {
+type MantisSlackDesktopSmokeCommanderOptions = {
   altModel?: string;
   class?: string;
+  crabboxBin?: string;
+  credentialRole?: string;
+  credentialSource?: string;
   fast?: boolean;
+  gatewaySetup?: boolean;
+  hydrateMode?: MantisSlackDesktopHydrateMode;
+  idleTimeout?: string;
+  keepLease?: boolean;
+  leaseId?: string;
+  machineClass?: string;
   model?: string;
+  outputDir?: string;
+  provider?: string;
+  providerMode?: string;
+  repoRoot?: string;
   scenario?: string[];
+  slackChannelId?: string;
+  slackUrl?: string;
+  ttl?: string;
 };
 
-type MantisVisualTaskCommanderOptions = Omit<
-  MantisVisualTaskOptions,
-  "commandRunner" | "env" | "settleMs" | "visionTimeoutMs"
-> & {
+type MantisTelegramDesktopBuilderCommanderOptions = {
   class?: string;
+  crabboxBin?: string;
+  credentialRole?: string;
+  credentialSource?: string;
+  gatewaySetup?: boolean;
+  hydrateMode?: MantisTelegramDesktopHydrateMode;
+  idleTimeout?: string;
+  keepLease?: boolean;
+  leaseId?: string;
+  machineClass?: string;
+  outputDir?: string;
+  provider?: string;
+  repoRoot?: string;
+  telegramProfileArchiveEnv?: string;
+  telegramProfileDir?: string;
+  ttl?: string;
+};
+
+type MantisVisualTaskCommanderOptions = {
+  browserUrl?: string;
+  class?: string;
+  crabboxBin?: string;
+  duration?: string;
+  expectText?: string;
+  idleTimeout?: string;
+  keepLease?: boolean;
+  leaseId?: string;
+  machineClass?: string;
+  outputDir?: string;
+  provider?: string;
+  repoRoot?: string;
   settleMs?: string;
+  ttl?: string;
+  visionMode?: MantisVisualTaskVisionMode;
+  visionModel?: string;
+  visionPrompt?: string;
   visionTimeoutMs?: string;
 };
 
-type MantisVisualDriverCommanderOptions = Omit<
-  MantisVisualDriverOptions,
-  "commandRunner" | "env" | "settleMs" | "visionTimeoutMs"
-> & {
+type MantisVisualDriverCommanderOptions = {
+  browserUrl?: string;
+  crabboxBin?: string;
+  expectText?: string;
+  leaseId?: string;
+  outputDir?: string;
+  provider?: string;
+  repoRoot?: string;
   settleMs?: string;
+  visionMode?: MantisVisualTaskVisionMode;
+  visionModel?: string;
+  visionPrompt?: string;
   visionTimeoutMs?: string;
 };
+
+function collectString(value: string, previous: string[] = []) {
+  return [...previous, value];
+}
 
 function parseOptionalInteger(value: string | undefined, label: string) {
   if (value === undefined) {
@@ -202,13 +217,22 @@ export function registerMantisCli(qa: Command) {
     .option("--fast", "Enable fast provider mode where supported", true)
     .option("--skip-install", "Skip pnpm install in baseline/candidate worktrees", false)
     .option("--skip-build", "Skip pnpm build in baseline/candidate worktrees", false)
-    .action(
-      qaCliAction(async (opts: MantisBeforeAfterCommanderOptions) => {
-        const { fast, ...options } = opts;
-        const runtime = await import("./cli.runtime.js");
-        await runtime.runMantisBeforeAfterCommand({ ...options, fastMode: fast });
-      }),
-    );
+    .action(async (opts: MantisBeforeAfterCommanderOptions) => {
+      await runBeforeAfter({
+        baseline: opts.baseline,
+        candidate: opts.candidate,
+        credentialRole: opts.credentialRole,
+        credentialSource: opts.credentialSource,
+        fastMode: opts.fast,
+        outputDir: opts.outputDir,
+        providerMode: opts.providerMode,
+        repoRoot: opts.repoRoot,
+        scenario: opts.scenario,
+        skipBuild: opts.skipBuild,
+        skipInstall: opts.skipInstall,
+        transport: opts.transport,
+      });
+    });
 
   mantis
     .command("discord-smoke")
@@ -222,12 +246,19 @@ export function registerMantisCli(qa: Command) {
     .option("--token-file-env <name>", "Env var containing the Mantis Discord bot token file path")
     .option("--message <text>", "Smoke message to post")
     .option("--skip-post", "Only check Discord API visibility; do not post or react", false)
-    .action(
-      qaCliAction(async (opts: MantisDiscordSmokeCommanderOptions) => {
-        const runtime = await import("./cli.runtime.js");
-        await runtime.runMantisDiscordSmokeCommand(opts);
-      }),
-    );
+    .action(async (opts: MantisDiscordSmokeCommanderOptions) => {
+      await runDiscordSmoke({
+        channelId: opts.channelId,
+        guildId: opts.guildId,
+        message: opts.message,
+        outputDir: opts.outputDir,
+        repoRoot: opts.repoRoot,
+        skipPost: opts.skipPost,
+        tokenFile: opts.tokenFile,
+        tokenFileEnv: opts.tokenFileEnv,
+        tokenEnv: opts.tokenEnv,
+      });
+    });
 
   mantis
     .command("desktop-browser-smoke")
@@ -255,18 +286,24 @@ export function registerMantisCli(qa: Command) {
     .option("--ttl <duration>", "Crabbox maximum lease lifetime")
     .option("--video-duration <seconds>", "Visible desktop recording duration in seconds")
     .option("--keep-lease", "Keep a lease created by this run after a passing smoke")
-    .action(
-      qaCliAction(async (opts: MantisDesktopBrowserSmokeCommanderOptions) => {
-        const { class: machineClassAlias, videoDuration, ...options } = opts;
-        const videoDurationSeconds = parseOptionalInteger(videoDuration, "--video-duration");
-        const runtime = await import("./cli.runtime.js");
-        await runtime.runMantisDesktopBrowserSmokeCommand({
-          ...options,
-          machineClass: options.machineClass ?? machineClassAlias,
-          videoDurationSeconds,
-        });
-      }),
-    );
+    .action(async (opts: MantisDesktopBrowserSmokeCommanderOptions) => {
+      await runDesktopBrowserSmoke({
+        browserProfileArchiveEnv: opts.browserProfileArchiveEnv,
+        browserProfileDir: opts.browserProfileDir,
+        browserUrl: opts.browserUrl,
+        crabboxBin: opts.crabboxBin,
+        htmlFile: opts.htmlFile,
+        idleTimeout: opts.idleTimeout,
+        keepLease: opts.keepLease,
+        leaseId: opts.leaseId,
+        machineClass: opts.machineClass ?? opts.class,
+        outputDir: opts.outputDir,
+        provider: opts.provider,
+        repoRoot: opts.repoRoot,
+        ttl: opts.ttl,
+        videoDurationSeconds: parseOptionalInteger(opts.videoDuration, "--video-duration"),
+      });
+    });
 
   mantis
     .command("slack-desktop-smoke")
@@ -279,18 +316,12 @@ export function registerMantisCli(qa: Command) {
     .option("--provider <provider>", "Crabbox provider")
     .option("--machine-class <class>", "Crabbox machine class")
     .option("--class <class>", "Alias for --machine-class")
-    .option("--market <market>", "Crabbox capacity market: spot or on-demand")
     .option("--lease-id <id>", "Reuse an existing Crabbox lease")
-    .option("--fresh-pr <spec>", "Use Crabbox fresh PR checkout instead of syncing the local tree")
     .option("--idle-timeout <duration>", "Crabbox idle timeout")
     .option("--ttl <duration>", "Crabbox maximum lease lifetime")
     .option("--keep-lease", "Keep a lease created by this run after a passing smoke")
     .option("--no-keep-lease", "Stop a lease created by this run after a passing smoke")
     .option("--gateway-setup", "Start a persistent OpenClaw Slack gateway inside the VNC VM")
-    .option(
-      "--approval-checkpoints",
-      "Run Slack approval scenarios with visual checkpoint screenshot acknowledgements",
-    )
     .option("--slack-url <url>", "Slack web URL to open in the visible browser")
     .option("--slack-channel-id <id>", "Slack channel id for gateway setup allowlist")
     .option("--provider-mode <mode>", "QA provider mode")
@@ -306,24 +337,78 @@ export function registerMantisCli(qa: Command) {
     .option("--credential-source <source>", "Credential source for Slack QA: env or convex")
     .option("--credential-role <role>", "Credential role for convex auth")
     .option("--fast", "Enable provider fast mode where supported")
-    .action(
-      qaCliAction(async (opts: MantisSlackDesktopSmokeCommanderOptions) => {
-        if (opts.approvalCheckpoints && opts.gatewaySetup) {
-          throw new Error("--approval-checkpoints cannot be used with --gateway-setup.");
-        }
-        const { altModel, class: machineClassAlias, fast, model, scenario, ...options } = opts;
-        const runtime = await import("./cli.runtime.js");
-        await runtime.runMantisSlackDesktopSmokeCommand({
-          ...options,
-          alternateModel: altModel,
-          fastMode: fast,
-          gatewaySetup: opts.gatewaySetup,
-          machineClass: options.machineClass ?? machineClassAlias,
-          primaryModel: model,
-          scenarioIds: scenario,
-        });
-      }),
-    );
+    .action(async (opts: MantisSlackDesktopSmokeCommanderOptions) => {
+      await runSlackDesktopSmoke({
+        alternateModel: opts.altModel,
+        crabboxBin: opts.crabboxBin,
+        credentialRole: opts.credentialRole,
+        credentialSource: opts.credentialSource,
+        fastMode: opts.fast,
+        gatewaySetup: opts.gatewaySetup,
+        hydrateMode: opts.hydrateMode,
+        idleTimeout: opts.idleTimeout,
+        keepLease: opts.keepLease,
+        leaseId: opts.leaseId,
+        machineClass: opts.machineClass ?? opts.class,
+        outputDir: opts.outputDir,
+        primaryModel: opts.model,
+        provider: opts.provider,
+        providerMode: opts.providerMode,
+        repoRoot: opts.repoRoot,
+        scenarioIds: opts.scenario,
+        slackChannelId: opts.slackChannelId,
+        slackUrl: opts.slackUrl,
+        ttl: opts.ttl,
+      });
+    });
+
+  mantis
+    .command("telegram-desktop-builder")
+    .description(
+      "Lease or reuse a Crabbox VNC desktop, install Telegram Desktop, configure OpenClaw Telegram with a bot token, and capture screenshot/video artifacts",
+    )
+    .option("--repo-root <path>", "Repository root to target when running from a neutral cwd")
+    .option("--output-dir <path>", "Mantis Telegram desktop builder artifact directory")
+    .option("--crabbox-bin <path>", "Crabbox binary path")
+    .option("--provider <provider>", "Crabbox provider")
+    .option("--machine-class <class>", "Crabbox machine class")
+    .option("--class <class>", "Alias for --machine-class")
+    .option("--lease-id <id>", "Reuse an existing Crabbox lease")
+    .option("--idle-timeout <duration>", "Crabbox idle timeout")
+    .option("--ttl <duration>", "Crabbox maximum lease lifetime")
+    .option("--keep-lease", "Keep a lease created by this run after a passing builder run")
+    .option("--no-keep-lease", "Stop a lease created by this run after a passing builder run")
+    .option("--no-gateway-setup", "Install Telegram Desktop only; do not configure OpenClaw")
+    .option("--credential-source <source>", "Credential source for Telegram setup: env or convex")
+    .option("--credential-role <role>", "Credential role for convex auth")
+    .option("--hydrate-mode <mode>", "Remote hydrate mode: source or prehydrated")
+    .option(
+      "--telegram-profile-archive-env <name>",
+      "Env var containing a base64 .tgz Telegram Desktop profile archive",
+    )
+    .option(
+      "--telegram-profile-dir <remote-path>",
+      "Remote Telegram Desktop profile dir restored before app launch",
+    )
+    .action(async (opts: MantisTelegramDesktopBuilderCommanderOptions) => {
+      await runTelegramDesktopBuilder({
+        crabboxBin: opts.crabboxBin,
+        credentialRole: opts.credentialRole,
+        credentialSource: opts.credentialSource,
+        gatewaySetup: opts.gatewaySetup,
+        hydrateMode: opts.hydrateMode,
+        idleTimeout: opts.idleTimeout,
+        keepLease: opts.keepLease,
+        leaseId: opts.leaseId,
+        machineClass: opts.machineClass ?? opts.class,
+        outputDir: opts.outputDir,
+        provider: opts.provider,
+        repoRoot: opts.repoRoot,
+        telegramProfileArchiveEnv: opts.telegramProfileArchiveEnv,
+        telegramProfileDir: opts.telegramProfileDir,
+        ttl: opts.ttl,
+      });
+    });
 
   mantis
     .command("visual-task")
@@ -348,20 +433,27 @@ export function registerMantisCli(qa: Command) {
     .option("--vision-model <provider/model>", "Image-capable provider/model ref")
     .option("--vision-timeout-ms <ms>", "Image understanding timeout in milliseconds")
     .option("--expect-text <text>", "Case-insensitive text expected in the vision output")
-    .action(
-      qaCliAction(async (opts: MantisVisualTaskCommanderOptions) => {
-        const { class: machineClassAlias, ...options } = opts;
-        const settleMs = parseOptionalInteger(opts.settleMs, "--settle-ms");
-        const visionTimeoutMs = parseOptionalInteger(opts.visionTimeoutMs, "--vision-timeout-ms");
-        const runtime = await import("./cli.runtime.js");
-        await runtime.runMantisVisualTaskCommand({
-          ...options,
-          machineClass: options.machineClass ?? machineClassAlias,
-          settleMs,
-          visionTimeoutMs,
-        });
-      }),
-    );
+    .action(async (opts: MantisVisualTaskCommanderOptions) => {
+      await runVisualTask({
+        browserUrl: opts.browserUrl,
+        crabboxBin: opts.crabboxBin,
+        duration: opts.duration,
+        expectText: opts.expectText,
+        idleTimeout: opts.idleTimeout,
+        keepLease: opts.keepLease,
+        leaseId: opts.leaseId,
+        machineClass: opts.machineClass ?? opts.class,
+        outputDir: opts.outputDir,
+        provider: opts.provider,
+        repoRoot: opts.repoRoot,
+        settleMs: parseOptionalInteger(opts.settleMs, "--settle-ms"),
+        ttl: opts.ttl,
+        visionMode: opts.visionMode,
+        visionModel: opts.visionModel,
+        visionPrompt: opts.visionPrompt,
+        visionTimeoutMs: parseOptionalInteger(opts.visionTimeoutMs, "--vision-timeout-ms"),
+      });
+    });
 
   mantis
     .command("visual-driver")
@@ -380,39 +472,20 @@ export function registerMantisCli(qa: Command) {
     .option("--vision-model <provider/model>", "Image-capable provider/model ref")
     .option("--vision-timeout-ms <ms>", "Image understanding timeout in milliseconds")
     .option("--expect-text <text>", "Case-insensitive text expected in the vision output")
-    .action(
-      qaCliAction(async (opts: MantisVisualDriverCommanderOptions) => {
-        const settleMs = parseOptionalInteger(opts.settleMs, "--settle-ms");
-        const visionTimeoutMs = parseOptionalInteger(opts.visionTimeoutMs, "--vision-timeout-ms");
-        const runtime = await import("./cli.runtime.js");
-        await runtime.runMantisVisualDriverCommand({ ...opts, settleMs, visionTimeoutMs });
-      }),
-    );
-
-  mantis
-    .command("telegram-desktop-builder")
-    .description("Build Telegram Desktop proof artifacts inside a Crabbox desktop rental")
-    .option("--repo-root <path>", "Repository root to target when running from a neutral cwd")
-    .option("--output-dir <path>", "Mantis Telegram desktop artifact directory")
-    .option("--crabbox-bin <path>", "Crabbox binary path")
-    .option("--provider <provider>", "Crabbox provider")
-    .option("--machine-class <class>", "Crabbox machine class")
-    .option("--lease-id <id>", "Reuse an existing Crabbox lease")
-    .option("--idle-timeout <duration>", "Crabbox idle timeout")
-    .option("--ttl <duration>", "Crabbox maximum lease lifetime")
-    .option("--keep-lease", "Keep a lease created by this run after a passing build")
-    .option("--no-keep-lease", "Stop a lease created by this run after a passing build")
-    .option("--credential-source <source>", "Credential source for Telegram QA: env or convex")
-    .option("--credential-role <role>", "Credential role for convex auth")
-    .option("--hydrate-mode <mode>", "Remote hydrate mode: source or prehydrated")
-    .option("--telegram-profile-archive-env <name>", "Env var containing the Telegram profile archive")
-    .option("--telegram-profile-dir <remote-path>", "Remote Telegram Desktop user-data-dir path")
-    .option("--gateway-setup", "Start a persistent OpenClaw Telegram gateway inside the VNC VM")
-    .option("--no-gateway-setup", "Do not start a persistent gateway inside the VNC VM")
-    .action(
-      qaCliAction(async (opts: MantisTelegramDesktopBuilderOptions) => {
-        const runtime = await import("./cli.runtime.js");
-        await runtime.runMantisTelegramDesktopBuilderCommand(opts);
-      }),
-    );
+    .action(async (opts: MantisVisualDriverCommanderOptions) => {
+      await runVisualDriver({
+        browserUrl: opts.browserUrl,
+        crabboxBin: opts.crabboxBin,
+        expectText: opts.expectText,
+        leaseId: opts.leaseId,
+        outputDir: opts.outputDir,
+        provider: opts.provider,
+        repoRoot: opts.repoRoot,
+        settleMs: parseOptionalInteger(opts.settleMs, "--settle-ms"),
+        visionMode: opts.visionMode,
+        visionModel: opts.visionModel,
+        visionPrompt: opts.visionPrompt,
+        visionTimeoutMs: parseOptionalInteger(opts.visionTimeoutMs, "--vision-timeout-ms"),
+      });
+    });
 }

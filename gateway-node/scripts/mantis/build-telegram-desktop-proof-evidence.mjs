@@ -1,114 +1,251 @@
-// Builds paired Telegram Desktop GIF evidence (baseline/candidate lanes) for
-// PR comments: copies each lane's cropped session GIF + report into the
-// output dir and writes a Mantis manifest.
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+#!/usr/bin/env node
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
-import {
-  EVIDENCE_MANIFEST_FILE_NAME,
-  loadEvidenceManifest,
-} from "./publish-pr-evidence.mjs";
+import { fileURLToPath } from "node:url";
 
-const GIF_TARGET_PATH = "telegram-desktop-proof.gif";
-const DEFAULT_EXPECTED = "visual proof captured";
+const LANES = [
+  {
+    altPrefix: "Baseline",
+    label: "Main",
+    lane: "baseline",
+  },
+  {
+    altPrefix: "Candidate",
+    label: "This PR",
+    lane: "candidate",
+  },
+];
 
-function parseArgs(args) {
-  const options = {};
-  for (let i = 0; i < args.length; i++) {
-    if (args[i].startsWith("--") && i + 1 < args.length) {
-      options[args[i].slice(2)] = args[i + 1];
-      i++;
+function parseArgs(argv) {
+  const args = {};
+  for (let index = 0; index < argv.length; index += 1) {
+    const key = argv[index];
+    if (!key.startsWith("--")) {
+      throw new Error(`Unexpected argument: ${key}`);
     }
+    const name = key.slice(2).replaceAll("-", "_");
+    const value = argv[index + 1];
+    if (!value || value.startsWith("--")) {
+      throw new Error(`Missing value for ${key}`);
+    }
+    args[name] = value;
+    index += 1;
   }
-  return options;
+  return args;
 }
 
-function readLaneSummary(laneOutputDir) {
-  return JSON.parse(
-    readFileSync(path.join(laneOutputDir, "telegram-user-crabbox-session-summary.json"), "utf8"),
-  );
+function readJson(filePath) {
+  return JSON.parse(readFileSync(filePath, "utf8"));
 }
 
-export function writeTelegramDesktopProofEvidence(args) {
-  const options = parseArgs(args);
-  const outputDir = options["output-dir"];
-  if (!outputDir) {
-    throw new Error("writeTelegramDesktopProofEvidence requires --output-dir");
+function copyArtifact({ outputDir, required = true, source, targetPath }) {
+  if (!source || !existsSync(source)) {
+    if (required) {
+      throw new Error(`Missing required artifact: ${source}`);
+    }
+    return false;
   }
+  const target = path.join(outputDir, targetPath);
+  mkdirSync(path.dirname(target), { recursive: true });
+  copyFileSync(source, target);
+  return true;
+}
 
-  const lanes = [
+function resolveSummaryArtifact(lane, key) {
+  const value = lane.summary.artifacts?.[key];
+  return typeof value === "string" ? path.resolve(lane.repoRoot, value) : undefined;
+}
+
+function loadLane({ outputDir, repoRoot, status }) {
+  const summaryPath = path.join(outputDir, "telegram-user-crabbox-session-summary.json");
+  const summary = readJson(summaryPath);
+  return {
+    outputDir,
+    repoRoot,
+    status: status || summary.status || "unknown",
+    summary,
+    summaryPath,
+  };
+}
+
+function copyLaneArtifacts({ lane, laneName, outputDir }) {
+  const prefix = laneName;
+  const gif =
+    resolveSummaryArtifact(lane, "previewGifCropped") ?? resolveSummaryArtifact(lane, "previewGif");
+  copyArtifact({
+    outputDir,
+    source: gif,
+    targetPath: `${prefix}/telegram-desktop-proof.gif`,
+  });
+  copyArtifact({
+    outputDir,
+    required: false,
+    source:
+      resolveSummaryArtifact(lane, "trimmedVideoCropped") ??
+      resolveSummaryArtifact(lane, "trimmedVideo"),
+    targetPath: `${prefix}/telegram-desktop-proof.mp4`,
+  });
+  copyArtifact({
+    outputDir,
+    required: false,
+    source: resolveSummaryArtifact(lane, "screenshot"),
+    targetPath: `${prefix}/telegram-desktop-proof.png`,
+  });
+  copyArtifact({
+    outputDir,
+    source: lane.summaryPath,
+    targetPath: `${prefix}/summary.json`,
+  });
+  copyArtifact({
+    outputDir,
+    required: false,
+    source:
+      typeof lane.summary.report === "string"
+        ? path.resolve(lane.repoRoot, lane.summary.report)
+        : undefined,
+    targetPath: `${prefix}/report.md`,
+  });
+}
+
+function laneStatus(lane) {
+  return lane.status === "pass" ? "pass" : "fail";
+}
+
+function laneArtifactEntries() {
+  return LANES.flatMap(({ altPrefix, label, lane }) => [
     {
-      lane: "baseline",
-      repoRoot: options["baseline-repo-root"],
-      laneOutputDir: options["baseline-output-dir"],
-      ref: options["baseline-ref"],
-      sha: options["baseline-sha"],
-    },
-    {
-      lane: "candidate",
-      repoRoot: options["candidate-repo-root"],
-      laneOutputDir: options["candidate-output-dir"],
-      ref: options["candidate-ref"],
-      sha: options["candidate-sha"],
-    },
-  ];
-
-  const artifacts = [];
-  const comparison = { pass: true };
-  for (const { lane, repoRoot, laneOutputDir, ref, sha } of lanes) {
-    const summary = readLaneSummary(laneOutputDir);
-    const gifSource = path.resolve(repoRoot, summary.artifacts.previewGifCropped);
-    const gifDir = path.join(outputDir, lane);
-    mkdirSync(gifDir, { recursive: true });
-    const gifTarget = path.join(gifDir, GIF_TARGET_PATH);
-    copyFileSync(gifSource, gifTarget);
-
-    const status = summary.status ?? "pass";
-    comparison[lane] = {
-      expected: `${lane} ${DEFAULT_EXPECTED}`,
-      ref,
-      sha,
-      status,
-    };
-    if (status !== "pass") comparison.pass = false;
-
-    artifacts.push({
-      alt: `${lane === "baseline" ? "Baseline" : "Candidate"} Telegram Desktop chat`,
-      kind: "timeline",
-      label: `${lane === "baseline" ? "Baseline" : "Candidate"} Telegram Desktop proof`,
+      alt: `${altPrefix} native Telegram Desktop proof GIF`,
+      inline: true,
+      kind: "motionPreview",
+      label,
       lane,
-      path: gifTarget,
-      targetPath: `${lane}/${GIF_TARGET_PATH}`,
-    });
-
-    const reportSource = path.resolve(repoRoot, summary.report);
-    const reportTarget = path.join(gifDir, "telegram-desktop-proof-report.md");
-    copyFileSync(reportSource, reportTarget);
-    artifacts.push({
+      path: `${lane}/telegram-desktop-proof.gif`,
+      targetPath: `${lane}/telegram-desktop-proof.gif`,
+      width: 420,
+    },
+    {
+      kind: "motionClip",
+      label: `${label} MP4`,
+      lane,
+      path: `${lane}/telegram-desktop-proof.mp4`,
+      required: false,
+      targetPath: `${lane}/telegram-desktop-proof.mp4`,
+    },
+    {
+      alt: `${altPrefix} native Telegram Desktop screenshot`,
+      inline: false,
+      kind: "desktopScreenshot",
+      label: `${label} screenshot`,
+      lane,
+      path: `${lane}/telegram-desktop-proof.png`,
+      required: false,
+      targetPath: `${lane}/telegram-desktop-proof.png`,
+    },
+    {
+      kind: "metadata",
+      label: `${label} session summary`,
+      lane,
+      path: `${lane}/summary.json`,
+      targetPath: `${lane}/summary.json`,
+    },
+    {
       kind: "report",
-      label: `${lane} proof report`,
+      label: `${label} session report`,
       lane,
-      path: reportTarget,
-      targetPath: `${lane}/telegram-desktop-proof-report.md`,
-    });
-  }
+      path: `${lane}/report.md`,
+      required: false,
+      targetPath: `${lane}/report.md`,
+    },
+  ]);
+}
 
-  const manifest = {
+export function buildTelegramDesktopProofManifest({
+  baseline,
+  baselineRef,
+  baselineSha,
+  candidate,
+  candidateRef,
+  candidateSha,
+  scenarioLabel,
+}) {
+  const baselineStatus = laneStatus(baseline);
+  const candidateStatus = laneStatus(candidate);
+  const pass = baselineStatus === "pass" && candidateStatus === "pass";
+  return {
     schemaVersion: 1,
     id: "telegram-desktop-proof",
     title: "Mantis Telegram Desktop Proof",
-    summary: "Native Telegram Desktop sessions captured baseline and candidate proof GIFs.",
-    scenario: options["scenario-label"] ?? "telegram-desktop-proof",
-    comparison,
-    artifacts,
+    summary:
+      "Mantis captured native Telegram Desktop before/after GIF evidence with Convex-leased Telegram credentials.",
+    scenario: scenarioLabel || "telegram-desktop-proof",
+    comparison: {
+      baseline: {
+        ...(baselineSha ? { sha: baselineSha } : {}),
+        ...(baselineRef ? { ref: baselineRef } : {}),
+        expected: "baseline visual proof captured",
+        status: baselineStatus,
+      },
+      candidate: {
+        ...(candidateSha ? { sha: candidateSha } : {}),
+        ...(candidateRef ? { ref: candidateRef } : {}),
+        expected: "candidate visual proof captured",
+        status: candidateStatus,
+        fixed: candidateStatus === "pass",
+      },
+      pass,
+    },
+    artifacts: laneArtifactEntries(),
   };
-
-  const manifestPath = path.join(outputDir, EVIDENCE_MANIFEST_FILE_NAME);
-  writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
-  return { manifest: loadEvidenceManifest(manifestPath), manifestPath, outputDir };
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const result = writeTelegramDesktopProofEvidence(process.argv.slice(2));
-  process.stdout.write(`Mantis Telegram Desktop proof evidence: ${result.manifestPath}\n`);
+export function writeTelegramDesktopProofEvidence(rawArgs = process.argv.slice(2)) {
+  const args = parseArgs(rawArgs);
+  for (const key of [
+    "baseline_output_dir",
+    "baseline_repo_root",
+    "candidate_output_dir",
+    "candidate_repo_root",
+    "output_dir",
+  ]) {
+    if (!args[key]) {
+      throw new Error(`Missing --${key.replaceAll("_", "-")}.`);
+    }
+  }
+
+  const outputDir = path.resolve(args.output_dir);
+  mkdirSync(outputDir, { recursive: true });
+  const baseline = loadLane({
+    outputDir: path.resolve(args.baseline_output_dir),
+    repoRoot: path.resolve(args.baseline_repo_root),
+    status: args.baseline_status,
+  });
+  const candidate = loadLane({
+    outputDir: path.resolve(args.candidate_output_dir),
+    repoRoot: path.resolve(args.candidate_repo_root),
+    status: args.candidate_status,
+  });
+  copyLaneArtifacts({ lane: baseline, laneName: "baseline", outputDir });
+  copyLaneArtifacts({ lane: candidate, laneName: "candidate", outputDir });
+  const manifest = buildTelegramDesktopProofManifest({
+    baseline,
+    baselineRef: args.baseline_ref,
+    baselineSha: args.baseline_sha,
+    candidate,
+    candidateRef: args.candidate_ref,
+    candidateSha: args.candidate_sha,
+    scenarioLabel: args.scenario_label,
+  });
+  const manifestPath = path.join(outputDir, "mantis-evidence.json");
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  return { manifest, manifestPath };
+}
+
+const executedPath = process.argv[1] ? path.resolve(process.argv[1]) : "";
+if (executedPath === fileURLToPath(import.meta.url)) {
+  try {
+    writeTelegramDesktopProofEvidence();
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
 }

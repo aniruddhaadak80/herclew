@@ -1,318 +1,606 @@
-// Publishes Mantis evidence manifests as PR comments and to R2-compatible
-// object storage. Used by the mantis evidence builders and the mantis
-// workflows. Manifests are plain JSON: { schemaVersion, id, title, summary,
-// scenario, comparison { baseline, candidate, pass }, artifacts [] }.
+#!/usr/bin/env node
+import { execFileSync } from "node:child_process";
 import { createHash, createHmac } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 
-export const EVIDENCE_MANIFEST_FILE_NAME = "mantis-evidence.json";
-export const EVIDENCE_INDEX_FILE_NAME = "index.json";
-
-const WINDOWS_DRIVE_RE = /^[A-Za-z]:[\\/]/u;
-
-function isPathEscapingBase(baseDir, candidate) {
-  const normalized = path.normalize(candidate);
-  if (normalized === baseDir) return false;
-  if (path.isAbsolute(normalized) && !normalized.startsWith(baseDir + path.sep)) {
-    return true;
+function parseArgs(argv) {
+  const args = {};
+  for (let index = 0; index < argv.length; index += 1) {
+    const key = argv[index];
+    if (!key.startsWith("--")) {
+      throw new Error(`Unexpected argument: ${key}`);
+    }
+    const name = key.slice(2).replaceAll("-", "_");
+    const value = argv[index + 1];
+    if (!value || value.startsWith("--")) {
+      throw new Error(`Missing value for ${key}`);
+    }
+    args[name] = value;
+    index += 1;
   }
-  return !normalized.startsWith(baseDir + path.sep);
+  return args;
 }
 
-function resolveArtifactPath(baseDir, artifactPath) {
-  const resolved = path.resolve(baseDir, artifactPath);
-  if (isPathEscapingBase(baseDir, resolved)) {
-    throw new Error(`Mantis evidence artifact path escapes manifest directory: ${artifactPath}`);
-  }
-  return resolved;
-}
-
-function readJsonFile(filePath) {
+function readJson(filePath) {
   return JSON.parse(readFileSync(filePath, "utf8"));
 }
 
-export function loadEvidenceManifest(manifestPath) {
-  const baseDir = path.dirname(path.resolve(manifestPath));
-  const manifest = readJsonFile(manifestPath);
-
-  const artifacts = [];
-  for (const artifact of manifest.artifacts ?? []) {
-    const resolved = resolveArtifactPath(baseDir, artifact.path ?? "");
-    // Optional visual artifacts may legitimately be absent on failed runs.
-    if (artifact.required === false && !existsFile(resolved)) {
-      continue;
-    }
-    artifacts.push(artifact);
+function assertInside(parentDir, candidatePath, label) {
+  const relative = path.relative(parentDir, candidatePath);
+  if (relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative))) {
+    return candidatePath;
   }
+  throw new Error(`${label} escapes manifest directory: ${candidatePath}`);
+}
+
+function normalizeTargetPath(targetPath) {
+  const normalized = path.posix.normalize(String(targetPath).replaceAll("\\", "/"));
+  if (
+    normalized === "." ||
+    normalized === "" ||
+    normalized.startsWith("../") ||
+    normalized.includes("/../") ||
+    normalized.startsWith("/") ||
+    /^[A-Za-z]:/u.test(normalized)
+  ) {
+    throw new Error(`Invalid artifact target path: ${targetPath}`);
+  }
+  return normalized;
+}
+
+function resolveArtifact(manifestDir, artifact) {
+  if (!artifact || typeof artifact !== "object") {
+    throw new Error("Manifest artifact entries must be objects.");
+  }
+  if (!artifact.path) {
+    throw new Error("Manifest artifact entry is missing path.");
+  }
+
+  const source = assertInside(
+    manifestDir,
+    path.resolve(manifestDir, artifact.path),
+    `Artifact ${artifact.label ?? artifact.path}`,
+  );
+  const required = artifact.required !== false;
+  if (!existsSync(source)) {
+    if (required) {
+      throw new Error(`Missing required artifact: ${artifact.path}`);
+    }
+    return null;
+  }
+  if (!statSync(source).isFile()) {
+    throw new Error(`Artifact is not a file: ${artifact.path}`);
+  }
+
+  return {
+    ...artifact,
+    kind: artifact.kind ?? "attachment",
+    lane: artifact.lane ?? "run",
+    label: artifact.label ?? artifact.path,
+    required,
+    source,
+    targetPath: normalizeTargetPath(artifact.targetPath ?? path.basename(artifact.path)),
+  };
+}
+
+export function loadEvidenceManifest(manifestPath) {
+  const resolvedManifest = path.resolve(manifestPath);
+  const manifestDir = path.dirname(resolvedManifest);
+  const manifest = readJson(resolvedManifest);
+  if (manifest.schemaVersion !== 1) {
+    throw new Error(`Unsupported Mantis evidence manifest schema: ${manifest.schemaVersion}`);
+  }
+  if (!manifest.id || !manifest.title || !manifest.scenario) {
+    throw new Error("Mantis evidence manifest requires id, title, and scenario.");
+  }
+  const artifacts = (manifest.artifacts ?? [])
+    .map((artifact) => resolveArtifact(manifestDir, artifact))
+    .filter(Boolean);
   artifacts.push({
     kind: "metadata",
-    label: "Mantis evidence manifest",
     lane: "run",
-    path: EVIDENCE_MANIFEST_FILE_NAME,
-    targetPath: EVIDENCE_MANIFEST_FILE_NAME,
+    label: "Mantis evidence manifest",
+    source: resolvedManifest,
+    targetPath: "mantis-evidence.json",
   });
-  return { ...manifest, artifacts, manifestDir: baseDir };
+  return {
+    ...manifest,
+    artifacts,
+    manifestDir,
+  };
 }
 
-function existsFile(filePath) {
-  try {
-    return readFileSync(filePath).length >= 0;
-  } catch {
+function encodePathForUrl(input) {
+  return input
+    .split("/")
+    .filter(Boolean)
+    .map((part) => encodeURIComponent(part))
+    .join("/");
+}
+
+function artifactUrl(rawBase, artifact) {
+  return `${rawBase}/${encodePathForUrl(artifact.targetPath)}`;
+}
+
+function requireEnv(env, name) {
+  const value = env[name]?.trim();
+  if (!value) {
+    throw new Error(`Missing ${name}.`);
+  }
+  return value;
+}
+
+function objectStorageConfig(env = process.env) {
+  return {
+    accessKeyId: requireEnv(env, "MANTIS_ARTIFACT_R2_ACCESS_KEY_ID"),
+    bucket: requireEnv(env, "MANTIS_ARTIFACT_R2_BUCKET"),
+    endpoint: requireEnv(env, "MANTIS_ARTIFACT_R2_ENDPOINT").replace(/\/+$/u, ""),
+    publicBaseUrl: requireEnv(env, "MANTIS_ARTIFACT_R2_PUBLIC_BASE_URL").replace(/\/+$/u, ""),
+    region: requireEnv(env, "MANTIS_ARTIFACT_R2_REGION"),
+    secretAccessKey: requireEnv(env, "MANTIS_ARTIFACT_R2_SECRET_ACCESS_KEY"),
+  };
+}
+
+function digestHex(value) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function hmac(key, value, encoding) {
+  return createHmac("sha256", key).update(value).digest(encoding);
+}
+
+function signingKey({ date, region, secretAccessKey }) {
+  const dateKey = hmac(`AWS4${secretAccessKey}`, date);
+  const regionKey = hmac(dateKey, region);
+  const serviceKey = hmac(regionKey, "s3");
+  return hmac(serviceKey, "aws4_request");
+}
+
+function s3Path({ bucket, key }) {
+  return `/${encodePathForUrl(bucket)}/${encodePathForUrl(key)}`;
+}
+
+function contentType(filePath) {
+  const extension = path.extname(filePath).toLowerCase();
+  return (
+    {
+      ".gif": "image/gif",
+      ".html": "text/html; charset=utf-8",
+      ".json": "application/json",
+      ".md": "text/markdown; charset=utf-8",
+      ".mp4": "video/mp4",
+      ".png": "image/png",
+      ".webm": "video/webm",
+    }[extension] ?? "application/octet-stream"
+  );
+}
+
+function signedPutRequest({ artifact, body, config, key, now = new Date() }) {
+  const url = new URL(`${config.endpoint}${s3Path({ bucket: config.bucket, key })}`);
+  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/gu, "");
+  const date = amzDate.slice(0, 8);
+  const payloadHash = digestHex(body);
+  const headers = {
+    "content-type": contentType(artifact.targetPath),
+    host: url.host,
+    "x-amz-content-sha256": payloadHash,
+    "x-amz-date": amzDate,
+  };
+  const canonicalHeaders = Object.entries(headers)
+    .toSorted(([left], [right]) => left.localeCompare(right))
+    .map(([name, value]) => `${name}:${value}\n`)
+    .join("");
+  const signedHeaders = Object.keys(headers).toSorted().join(";");
+  const canonicalRequest = [
+    "PUT",
+    url.pathname,
+    "",
+    canonicalHeaders,
+    signedHeaders,
+    payloadHash,
+  ].join("\n");
+  const scope = `${date}/${config.region}/s3/aws4_request`;
+  const stringToSign = ["AWS4-HMAC-SHA256", amzDate, scope, digestHex(canonicalRequest)].join("\n");
+  const signature = hmac(
+    signingKey({ date, region: config.region, secretAccessKey: config.secretAccessKey }),
+    stringToSign,
+    "hex",
+  );
+  return {
+    body,
+    headers: {
+      "content-type": headers["content-type"],
+      "x-amz-content-sha256": headers["x-amz-content-sha256"],
+      "x-amz-date": headers["x-amz-date"],
+      authorization: `AWS4-HMAC-SHA256 Credential=${config.accessKeyId}/${scope}, SignedHeaders=${signedHeaders}, Signature=${signature}`,
+    },
+    method: "PUT",
+    url,
+  };
+}
+
+function byLane(artifacts, kind) {
+  const lanes = new Map();
+  for (const artifact of artifacts) {
+    if (artifact.kind !== kind) {
+      continue;
+    }
+    lanes.set(artifact.lane, artifact);
+  }
+  return lanes;
+}
+
+function findPair(artifacts, kind, leftLane, rightLane) {
+  const lanes = byLane(artifacts, kind);
+  const left = lanes.get(leftLane);
+  const right = lanes.get(rightLane);
+  return left && right ? { left, right } : null;
+}
+
+function renderPairTable({ pair, rawBase }) {
+  const { left, right } = pair;
+  if (!left || !right) {
+    return "";
+  }
+  return [
+    '<table width="100%">',
+    "  <thead>",
+    "    <tr>",
+    `      <th width="50%">${left.label}</th>`,
+    `      <th width="50%">${right.label}</th>`,
+    "    </tr>",
+    "  </thead>",
+    "  <tbody>",
+    "    <tr>",
+    `      <td width="50%" align="center"><img src="${artifactUrl(rawBase, left)}" width="100%" alt="${left.alt ?? left.label}"></td>`,
+    `      <td width="50%" align="center"><img src="${artifactUrl(rawBase, right)}" width="100%" alt="${right.alt ?? right.label}"></td>`,
+    "    </tr>",
+    "  </tbody>",
+    "</table>",
+    "",
+  ].join("\n");
+}
+
+function renderSingleImageTables({ artifacts, rawBase, pairedKeys }) {
+  const renderedPairs = new Set(pairedKeys);
+  return artifacts
+    .filter(
+      (artifact) => artifact.inline && !renderedPairs.has(`${artifact.kind}:${artifact.lane}`),
+    )
+    .map((artifact) => {
+      const width = Math.min(Number(artifact.width ?? 720) || 720, 900);
+      return [
+        `**${artifact.label}**`,
+        "",
+        `<img src="${artifactUrl(rawBase, artifact)}" width="${width}" alt="${artifact.alt ?? artifact.label}">`,
+        "",
+      ].join("\n");
+    })
+    .join("\n");
+}
+
+function renderLinkList({ artifacts, kind, rawBase, title }) {
+  const links = artifacts
+    .filter((artifact) => artifact.kind === kind)
+    .map((artifact) => `- [${artifact.label}](${artifactUrl(rawBase, artifact)})`);
+  if (links.length === 0) {
+    return "";
+  }
+  return [`${title}:`, ...links, ""].join("\n");
+}
+
+function laneLine(label, lane) {
+  if (!lane) {
+    return "";
+  }
+  const pieces = [`- ${label}: \`${lane.status ?? "unknown"}\``];
+  if (lane.sha) {
+    pieces.push(` at \`${lane.sha}\``);
+  } else if (lane.ref) {
+    pieces.push(` at \`${lane.ref}\``);
+  }
+  if (lane.expected) {
+    pieces.push(`, expected ${lane.expected}`);
+  }
+  return pieces.join("");
+}
+
+function hasVisibleProofArtifacts(manifest) {
+  return manifest.artifacts.some((artifact) =>
+    ["desktopScreenshot", "fullVideo", "motionClip", "motionPreview", "timeline"].includes(
+      artifact.kind,
+    ),
+  );
+}
+
+function isTelegramDesktopProof(manifest) {
+  return manifest.id === "telegram-desktop-proof" || manifest.scenario === "telegram-desktop-proof";
+}
+
+function publicSummary(manifest) {
+  return manifest.summary ?? "Mantis captured QA evidence for this scenario.";
+}
+
+function overallStatus(manifest) {
+  const pass = manifest.comparison?.pass;
+  return typeof pass === "boolean" ? String(pass) : "";
+}
+
+export function shouldPublishPrComment(manifest, { requestSource } = {}) {
+  if (!isTelegramDesktopProof(manifest) || hasVisibleProofArtifacts(manifest)) {
+    return true;
+  }
+  if (requestSource === "pull_request_target") {
     return false;
   }
-}
-
-function laneOf(artifact) {
-  return artifact.lane ?? "run";
-}
-
-function isVisualKind(kind) {
-  return kind !== "motionClip" && kind !== "metadata" && kind !== "report";
+  return manifest.comparison?.pass === true;
 }
 
 export function renderEvidenceComment({
-  artifactUrl,
+  artifactUrl: actionsArtifactUrl,
   manifest,
   marker,
   rawBase,
+  requestSource,
   runUrl,
   treeUrl,
 }) {
-  const lines = [];
-  lines.push(marker);
-  lines.push("");
-  lines.push(`## ${manifest.title ?? "Mantis Evidence"}`);
-  lines.push("");
-  lines.push(`Summary: ${manifest.summary ?? ""}`);
-  lines.push("");
-
-  const baseline = manifest.comparison?.baseline;
-  const candidate = manifest.comparison?.candidate;
-  const pass = manifest.comparison?.pass;
-
-  if (baseline && candidate) {
-    lines.push(
-      `- Baseline: \`${baseline.status}\` at \`${baseline.sha ?? "unknown"}\`, expected ${baseline.expected}`,
-    );
-    lines.push(
-      `- Candidate: \`${candidate.status}\` at \`${candidate.sha ?? "unknown"}\`, expected ${candidate.expected}`,
-    );
-  } else if (candidate) {
-    lines.push(
-      `- Candidate: \`${candidate.status}\` at \`${candidate.sha ?? "unknown"}\`, expected ${candidate.expected}`,
-    );
-  }
-  lines.push(`- Overall: \`${pass}\``);
-  if (artifactUrl) {
-    lines.push(`- Artifact: ${artifactUrl}`);
+  const comparison = manifest.comparison ?? {};
+  const baseline = comparison.baseline;
+  const candidate = comparison.candidate;
+  const pairs = [
+    findPair(manifest.artifacts, "timeline", "baseline", "candidate"),
+    findPair(manifest.artifacts, "desktopScreenshot", "baseline", "candidate"),
+    findPair(manifest.artifacts, "motionPreview", "baseline", "candidate"),
+  ].filter(Boolean);
+  const pairedKeys = pairs.flatMap((pair) => [
+    `${pair.left.kind}:${pair.left.lane}`,
+    `${pair.right.kind}:${pair.right.lane}`,
+  ]);
+  const lines = [
+    marker,
+    `## ${manifest.title}`,
+    "",
+    `Summary: ${publicSummary(manifest)}`,
+    "",
+    `- Scenario: \`${manifest.scenario}\``,
+  ];
+  if (requestSource) {
+    lines.push(`- Trigger: \`${requestSource}\``);
   }
   if (runUrl) {
     lines.push(`- Run: ${runUrl}`);
   }
+  if (actionsArtifactUrl) {
+    lines.push(`- Artifact: ${actionsArtifactUrl}`);
+  }
+  const baselineLine = laneLine("Baseline", baseline);
+  if (baselineLine) {
+    lines.push(baselineLine);
+  }
+  const candidateLine = laneLine("Candidate", candidate);
+  if (candidateLine) {
+    lines.push(candidateLine);
+  }
+  const overall = overallStatus(manifest);
+  if (overall) {
+    lines.push(`- Overall: \`${overall}\``);
+  }
   lines.push("");
 
-  const visualByLane = new Map();
-  const links = [];
-  for (const artifact of manifest.artifacts ?? []) {
-    if (artifact.kind === "motionClip") {
-      links.push(`[${artifact.label}](${rawBase}/${artifact.targetPath})`);
-      continue;
-    }
-    if (!isVisualKind(artifact.kind)) continue;
-    const lane = laneOf(artifact);
-    if (!visualByLane.has(lane)) {
-      visualByLane.set(lane, artifact);
-    }
+  const pairedSections = pairs.map((pair) => renderPairTable({ pair, rawBase }));
+
+  lines.push(...pairedSections);
+  const singleTables = renderSingleImageTables({
+    artifacts: manifest.artifacts,
+    pairedKeys,
+    rawBase,
+  });
+  if (singleTables) {
+    lines.push(singleTables);
   }
-
-  const lanes = ["baseline", "candidate"].filter((lane) => visualByLane.has(lane));
-  if (lanes.length > 0) {
-    lines.push('<table width="100%">');
-    const headerRow = lanes
-      .map((lane) => {
-        const laneExpected =
-          lane === "baseline" ? baseline?.expected : candidate?.expected;
-        const title = lane === "baseline" ? "Baseline" : "Candidate";
-        return `<th width="50%">${laneExpected ? `${title} ${laneExpected}` : title}</th>`;
-      })
-      .join("");
-    lines.push(`<tr>${headerRow}</tr>`);
-    const mediaRow = lanes
-      .map((lane) => {
-        const artifact = visualByLane.get(lane);
-        const alt = artifact.alt ?? artifact.label ?? lane;
-        return `<td width="50%" align="center"><img src="${rawBase}/${artifact.targetPath}" width="100%" alt="${alt}"></td>`;
-      })
-      .join("");
-    lines.push(`<tr>${mediaRow}</tr>`);
-    lines.push("</table>");
-    lines.push("");
+  const motionClips = renderLinkList({
+    artifacts: manifest.artifacts,
+    kind: "motionClip",
+    rawBase,
+    title: "Motion-trimmed clips",
+  });
+  if (motionClips) {
+    lines.push(motionClips);
   }
-
-  for (const link of links) {
-    lines.push(link);
+  const fullVideos = renderLinkList({
+    artifacts: manifest.artifacts,
+    kind: "fullVideo",
+    rawBase,
+    title: "Full videos",
+  });
+  if (fullVideos) {
+    lines.push(fullVideos);
   }
-  if (links.length > 0) {
-    lines.push("");
-  }
-
-  if (treeUrl) {
-    lines.push(`Raw QA files: ${treeUrl}`);
-  }
-
-  return lines.join("\n");
+  lines.push(`Raw QA files: ${treeUrl ?? rawBase}`);
+  return `${lines.join("\n").replace(/\n{3,}/gu, "\n\n")}\n`;
 }
 
-export function shouldPublishPrComment(manifest, { requestSource }) {
-  return requestSource === "issue_comment" && manifest.comparison?.pass === true;
-}
-
-function contentTypeFor(targetPath) {
-  const ext = path.extname(targetPath).toLowerCase();
-  if (ext === ".png") return "image/png";
-  if (ext === ".gif") return "image/gif";
-  if (ext === ".mp4") return "video/mp4";
-  if (ext === ".md") return "text/markdown";
-  return "application/json";
-}
-
-function sha256Hex(data) {
-  return createHash("sha256").update(data).digest("hex");
-}
-
-function hmac(key, data) {
-  return createHmac("sha256", key).update(data).digest();
-}
-
-function signKey(secret, dateStamp, region) {
-  let key = hmac(`AWS4${secret}`, dateStamp);
-  key = hmac(key, region);
-  key = hmac(key, "s3");
-  return hmac(key, "aws4_request");
-}
-
-async function putObject({ fetchImpl, endpoint, bucket, key, body, contentType, accessKeyId, secretAccessKey, region, date }) {
-  const url = `${endpoint}/${bucket}/${key}`;
-  const amzDate = date.toISOString().replace(/[:-]|\.[0-9]{3}/g, "");
-  const dateStamp = amzDate.slice(0, 8);
-  const payloadHash = sha256Hex(body);
-  const host = new URL(url).host;
-  const canonicalUri = `/${bucket}/${key}`;
-  const canonicalHeaders = [
-    `content-type:${contentType}`,
-    `host:${host}`,
-    `x-amz-content-sha256:${payloadHash}`,
-    `x-amz-date:${amzDate}`,
-  ].join("\n");
-  const signedHeaders = "content-type;host;x-amz-content-sha256;x-amz-date";
-  const canonicalRequest = [
-    "PUT",
-    canonicalUri,
-    "",
-    `${canonicalHeaders}\n`,
-    signedHeaders,
-    payloadHash,
-  ].join("\n");
-  const scope = `${dateStamp}/${region}/s3/aws4_request`;
-  const stringToSign = [
-    "AWS4-HMAC-SHA256",
-    amzDate,
-    scope,
-    sha256Hex(canonicalRequest),
-  ].join("\n");
-  const signature = createHmac("sha256", signKey(secretAccessKey, dateStamp, region))
-    .update(stringToSign)
-    .digest("hex");
-  const authorization = `AWS4-HMAC-SHA256 Credential=${accessKeyId}/${scope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-
-  return fetchImpl(url, {
-    method: "PUT",
-    body,
-    headers: {
-      "content-type": contentType,
-      "x-amz-date": amzDate,
-      authorization,
-    },
+function run(command, args, options = {}) {
+  return execFileSync(command, args, {
+    encoding: "utf8",
+    stdio: options.stdio ?? ["ignore", "pipe", "inherit"],
+    ...options,
   });
 }
 
 export async function publishArtifactFiles({
   artifactRoot,
-  fetchImpl,
+  fetchImpl = fetch,
   manifest,
-  manifestDir,
-  storageConfig,
-  manifestPath,
+  storageConfig = objectStorageConfig(),
 }) {
-  const baseDir =
-    manifestDir ?? manifest?.manifestDir ?? (manifestPath ? path.dirname(path.resolve(manifestPath)) : process.cwd());
-  const { accessKeyId, bucket, endpoint, publicBaseUrl, region, secretAccessKey } = storageConfig;
-  const date = new Date();
-  const rawBase = `${publicBaseUrl}/${artifactRoot}`;
-
-  for (const artifact of manifest.artifacts ?? []) {
-    if (artifact.targetPath === EVIDENCE_MANIFEST_FILE_NAME) continue;
-    const filePath = resolveArtifactPath(baseDir, artifact.path);
-    await putObject({
-      fetchImpl,
-      endpoint,
-      bucket,
-      key: `${artifactRoot}/${artifact.targetPath}`,
-      body: readFileSync(filePath),
-      contentType: contentTypeFor(artifact.targetPath),
-      accessKeyId,
-      secretAccessKey,
-      region,
-      date,
+  const safeArtifactRoot = normalizeTargetPath(artifactRoot);
+  const publicRoot = `${storageConfig.publicBaseUrl}/${encodePathForUrl(safeArtifactRoot)}`;
+  for (const artifact of manifest.artifacts) {
+    const key = normalizeTargetPath(`${safeArtifactRoot}/${artifact.targetPath}`);
+    const request = signedPutRequest({
+      artifact,
+      body: readFileSync(artifact.source),
+      config: storageConfig,
+      key,
     });
+    const response = await fetchImpl(request.url, {
+      body: request.body,
+      headers: request.headers,
+      method: request.method,
+    });
+    if (!response.ok) {
+      const responseText = await response.text();
+      throw new Error(
+        `Failed to upload Mantis artifact ${artifact.targetPath}: ${response.status} ${response.statusText}\n${responseText}`,
+      );
+    }
   }
-
-  const manifestBody = readFileSync(path.join(baseDir, EVIDENCE_MANIFEST_FILE_NAME));
-  await putObject({
-    fetchImpl,
-    endpoint,
-    bucket,
-    key: `${artifactRoot}/${EVIDENCE_MANIFEST_FILE_NAME}`,
-    body: manifestBody,
-    contentType: "application/json",
-    accessKeyId,
-    secretAccessKey,
-    region,
-    date,
+  const indexArtifact = {
+    targetPath: "index.json",
+  };
+  const indexRequest = signedPutRequest({
+    artifact: indexArtifact,
+    body: Buffer.from(
+      `${JSON.stringify(
+        {
+          artifacts: manifest.artifacts.map((artifact) => ({
+            kind: artifact.kind,
+            label: artifact.label,
+            lane: artifact.lane,
+            targetPath: artifact.targetPath,
+            url: artifactUrl(publicRoot, artifact),
+          })),
+          comparison: manifest.comparison,
+          id: manifest.id,
+          rawBase: publicRoot,
+          scenario: manifest.scenario,
+          summary: manifest.summary,
+          title: manifest.title,
+        },
+        null,
+        2,
+      )}\n`,
+    ),
+    config: storageConfig,
+    key: normalizeTargetPath(`${safeArtifactRoot}/${indexArtifact.targetPath}`),
   });
-
-  const indexEntries = (manifest.artifacts ?? []).map((artifact) => ({
-    targetPath: artifact.targetPath,
-    url: `${rawBase}/${artifact.targetPath}`,
-  }));
-  indexEntries.push({
-    targetPath: EVIDENCE_MANIFEST_FILE_NAME,
-    url: `${rawBase}/${EVIDENCE_MANIFEST_FILE_NAME}`,
+  const indexResponse = await fetchImpl(indexRequest.url, {
+    body: indexRequest.body,
+    headers: indexRequest.headers,
+    method: indexRequest.method,
   });
-  await putObject({
-    fetchImpl,
-    endpoint,
-    bucket,
-    key: `${artifactRoot}/${EVIDENCE_INDEX_FILE_NAME}`,
-    body: Buffer.from(JSON.stringify({ files: indexEntries }, null, 2)),
-    contentType: "application/json",
-    accessKeyId,
-    secretAccessKey,
-    region,
-    date,
-  });
-
+  if (!indexResponse.ok) {
+    const responseText = await indexResponse.text();
+    throw new Error(
+      `Failed to upload Mantis artifact ${indexArtifact.targetPath}: ${indexResponse.status} ${indexResponse.statusText}\n${responseText}`,
+    );
+  }
   return {
-    artifactRoot,
-    rawBase,
-    treeUrl: `${rawBase}/${EVIDENCE_INDEX_FILE_NAME}`,
+    artifactRoot: safeArtifactRoot,
+    rawBase: publicRoot,
+    treeUrl: artifactUrl(publicRoot, indexArtifact),
   };
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const [manifestPath] = process.argv.slice(2);
-  const manifest = loadEvidenceManifest(manifestPath ?? "mantis-evidence.json");
-  process.stdout.write(`${JSON.stringify(manifest, null, 2)}\n`);
+function upsertPrComment({ body, marker, prNumber, repo }) {
+  run("gh", ["api", `repos/${repo}/pulls/${prNumber}`, "--jq", ".number"]);
+  const commentId = run("gh", [
+    "api",
+    "--paginate",
+    `repos/${repo}/issues/${prNumber}/comments`,
+    "--jq",
+    `.[] | select(.body | contains("${marker}")) | .id`,
+  ])
+    .trim()
+    .split("\n")
+    .findLast((line) => line.length > 0);
+  const bodyFile = path.join(mkdtempSync(path.join(tmpdir(), "mantis-comment-")), "body.md");
+  writeFileSync(bodyFile, body);
+  try {
+    if (commentId) {
+      const payloadFile = `${bodyFile}.json`;
+      writeFileSync(payloadFile, JSON.stringify({ body }));
+      try {
+        run("gh", [
+          "api",
+          "--method",
+          "PATCH",
+          `repos/${repo}/issues/comments/${commentId}`,
+          "--input",
+          payloadFile,
+        ]);
+        console.log(`Updated Mantis QA evidence comment on PR #${prNumber}.`);
+        return;
+      } catch {
+        console.warn(
+          `Could not update existing Mantis QA evidence comment ${commentId}; creating a new one.`,
+        );
+      }
+    }
+    run("gh", ["pr", "comment", prNumber, "--body-file", bodyFile], { stdio: "inherit" });
+    console.log(`Created Mantis QA evidence comment on PR #${prNumber}.`);
+  } finally {
+    rmSync(path.dirname(bodyFile), { force: true, recursive: true });
+  }
+}
+
+export async function publishEvidence(rawArgs = process.argv.slice(2)) {
+  const args = parseArgs(rawArgs);
+  const required = ["manifest", "target_pr", "artifact_root", "marker"];
+  for (const key of required) {
+    if (!args[key]) {
+      throw new Error(`Missing --${key.replaceAll("_", "-")}.`);
+    }
+  }
+  if (!/^[0-9]+$/u.test(args.target_pr)) {
+    throw new Error(`--target-pr must be numeric, got ${args.target_pr}.`);
+  }
+  const repo = args.repo ?? process.env.GITHUB_REPOSITORY;
+  const ghToken = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
+  if (!repo) {
+    throw new Error("Missing --repo or GITHUB_REPOSITORY.");
+  }
+  if (!ghToken) {
+    throw new Error("Missing GH_TOKEN or GITHUB_TOKEN.");
+  }
+
+  const manifest = loadEvidenceManifest(args.manifest);
+  const published = await publishArtifactFiles({
+    artifactRoot: args.artifact_root,
+    manifest,
+  });
+  const body = renderEvidenceComment({
+    artifactUrl: args.artifact_url,
+    manifest,
+    marker: args.marker,
+    rawBase: published.rawBase,
+    requestSource: args.request_source,
+    runUrl: args.run_url,
+    treeUrl: published.treeUrl,
+  });
+  if (!shouldPublishPrComment(manifest, { requestSource: args.request_source })) {
+    console.log("Skipped Mantis QA evidence PR comment because the run did not capture proof.");
+    return;
+  }
+  upsertPrComment({
+    body,
+    marker: args.marker,
+    prNumber: args.target_pr,
+    repo,
+  });
+}
+
+const executedPath = process.argv[1] ? path.resolve(process.argv[1]) : "";
+if (executedPath === fileURLToPath(import.meta.url)) {
+  try {
+    await publishEvidence();
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
 }

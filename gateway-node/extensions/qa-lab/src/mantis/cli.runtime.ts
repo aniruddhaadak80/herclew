@@ -1,53 +1,109 @@
-import type {
-  MantisBeforeAfterOptions,
-  MantisDesktopBrowserSmokeOptions,
-  MantisDiscordSmokeOptions,
-  MantisSlackDesktopSmokeOptions,
-  MantisTelegramDesktopBuilderOptions,
-  MantisVisualDriverOptions,
-  MantisVisualTaskOptions,
-} from "./cli.js";
+import {
+  runMantisDesktopBrowserSmoke,
+  type MantisDesktopBrowserSmokeOptions,
+} from "./desktop-browser-smoke.runtime.js";
+import { runMantisDiscordSmoke, type MantisDiscordSmokeOptions } from "./discord-smoke.runtime.js";
+import { runMantisBeforeAfter, type MantisBeforeAfterOptions } from "./run.runtime.js";
+import {
+  runMantisSlackDesktopSmoke,
+  type MantisSlackDesktopSmokeOptions,
+} from "./slack-desktop-smoke.runtime.js";
+import {
+  runMantisTelegramDesktopBuilder,
+  type MantisTelegramDesktopBuilderOptions,
+} from "./telegram-desktop-builder.runtime.js";
+import {
+  runMantisVisualDriver,
+  runMantisVisualTask,
+  type MantisVisualDriverOptions,
+  type MantisVisualTaskOptions,
+} from "./visual-task.runtime.js";
 
-// The fork (herclew) ports the Mantis CLI registration but not the Mantis
-// runtimes (run.runtime, desktop-browser-smoke.runtime, ...), so these
-// commands fail with a clear error instead of "module not found". Tests
-// mock this module entirely.
-function unavailable(label: string): never {
-  throw new Error(
-    `${label}: Mantis runtimes are not ported to this fork; wire up the runtime implementation to enable this command.`,
-  );
+export async function runMantisDiscordSmokeCommand(opts: MantisDiscordSmokeOptions) {
+  const result = await runMantisDiscordSmoke(opts);
+  process.stdout.write(`Mantis Discord smoke report: ${result.reportPath}\n`);
+  process.stdout.write(`Mantis Discord smoke summary: ${result.summaryPath}\n`);
+  if (result.status === "fail") {
+    process.exitCode = 1;
+  }
 }
 
-export async function runMantisDiscordSmokeCommand(_opts: MantisDiscordSmokeOptions) {
-  unavailable("Mantis Discord smoke");
+export async function runMantisBeforeAfterCommand(opts: MantisBeforeAfterOptions) {
+  const result = await runMantisBeforeAfter(opts);
+  process.stdout.write(`Mantis before/after report: ${result.reportPath}\n`);
+  process.stdout.write(`Mantis before/after comparison: ${result.comparisonPath}\n`);
+  if (result.status === "fail") {
+    process.exitCode = 1;
+  }
 }
 
-export async function runMantisBeforeAfterCommand(_opts: MantisBeforeAfterOptions) {
-  unavailable("Mantis before/after");
+export async function runMantisDesktopBrowserSmokeCommand(opts: MantisDesktopBrowserSmokeOptions) {
+  const result = await runMantisDesktopBrowserSmoke(opts);
+  process.stdout.write(`Mantis desktop browser report: ${result.reportPath}\n`);
+  process.stdout.write(`Mantis desktop browser summary: ${result.summaryPath}\n`);
+  if (result.screenshotPath) {
+    process.stdout.write(`Mantis desktop browser screenshot: ${result.screenshotPath}\n`);
+  }
+  if (result.videoPath) {
+    process.stdout.write(`Mantis desktop browser video: ${result.videoPath}\n`);
+  }
+  if (result.status === "fail") {
+    process.exitCode = 1;
+  }
 }
 
-export async function runMantisDesktopBrowserSmokeCommand(
-  _opts: MantisDesktopBrowserSmokeOptions,
-) {
-  unavailable("Mantis desktop browser");
-}
-
-export async function runMantisSlackDesktopSmokeCommand(
-  _opts: MantisSlackDesktopSmokeOptions,
-) {
-  unavailable("Mantis Slack desktop");
+export async function runMantisSlackDesktopSmokeCommand(opts: MantisSlackDesktopSmokeOptions) {
+  const result = await runMantisSlackDesktopSmoke(opts);
+  process.stdout.write(`Mantis Slack desktop report: ${result.reportPath}\n`);
+  process.stdout.write(`Mantis Slack desktop summary: ${result.summaryPath}\n`);
+  if (result.screenshotPath) {
+    process.stdout.write(`Mantis Slack desktop screenshot: ${result.screenshotPath}\n`);
+  }
+  if (result.videoPath) {
+    process.stdout.write(`Mantis Slack desktop video: ${result.videoPath}\n`);
+  }
+  if (result.status === "fail") {
+    process.exitCode = 1;
+  }
 }
 
 export async function runMantisTelegramDesktopBuilderCommand(
-  _opts: MantisTelegramDesktopBuilderOptions,
+  opts: MantisTelegramDesktopBuilderOptions,
 ) {
-  unavailable("Mantis Telegram desktop builder");
+  const result = await runMantisTelegramDesktopBuilder(opts);
+  process.stdout.write(`Mantis Telegram desktop builder report: ${result.reportPath}\n`);
+  process.stdout.write(`Mantis Telegram desktop builder summary: ${result.summaryPath}\n`);
+  if (result.screenshotPath) {
+    process.stdout.write(`Mantis Telegram desktop builder screenshot: ${result.screenshotPath}\n`);
+  }
+  if (result.videoPath) {
+    process.stdout.write(`Mantis Telegram desktop builder video: ${result.videoPath}\n`);
+  }
+  if (result.status === "fail") {
+    process.exitCode = 1;
+  }
 }
 
-export async function runMantisVisualTaskCommand(_opts: MantisVisualTaskOptions) {
-  unavailable("Mantis visual task");
+export async function runMantisVisualDriverCommand(opts: MantisVisualDriverOptions) {
+  const result = await runMantisVisualDriver(opts);
+  process.stdout.write(`Mantis visual driver result: ${result.status}\n`);
+  process.stdout.write(`Mantis visual driver screenshot: ${result.screenshotPath}\n`);
+  if (result.status === "fail") {
+    process.exitCode = 1;
+  }
 }
 
-export async function runMantisVisualDriverCommand(_opts: MantisVisualDriverOptions) {
-  unavailable("Mantis visual driver");
+export async function runMantisVisualTaskCommand(opts: MantisVisualTaskOptions) {
+  const result = await runMantisVisualTask(opts);
+  process.stdout.write(`Mantis visual task report: ${result.reportPath}\n`);
+  process.stdout.write(`Mantis visual task summary: ${result.summaryPath}\n`);
+  if (result.screenshotPath) {
+    process.stdout.write(`Mantis visual task screenshot: ${result.screenshotPath}\n`);
+  }
+  if (result.videoPath) {
+    process.stdout.write(`Mantis visual task video: ${result.videoPath}\n`);
+  }
+  if (result.status === "fail") {
+    process.exitCode = 1;
+  }
 }
