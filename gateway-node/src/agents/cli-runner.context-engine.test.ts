@@ -426,7 +426,7 @@ describe("runPreparedCliAgent context engine lifecycle", () => {
     expect(dispose).not.toHaveBeenCalled();
   });
 
-  it("does not finalize context-engine turns for empty successful CLI output", async () => {
+  it("finalizes context-engine turns for empty successful CLI output without an assistant message", async () => {
     executePreparedCliRunMock.mockResolvedValue({
       text: "   ",
       rawText: "   ",
@@ -462,8 +462,8 @@ describe("runPreparedCliAgent context engine lifecycle", () => {
     });
 
     expect(bootstrap).toHaveBeenCalledTimes(1);
-    expect(afterTurn).not.toHaveBeenCalled();
-    expect(ingestBatch).not.toHaveBeenCalled();
+    expect(afterTurn).toHaveBeenCalledTimes(1);
+    expect(ingestBatch).toHaveBeenCalledTimes(1);
     expect(maintain).toHaveBeenCalledTimes(1);
     expect(dispose).not.toHaveBeenCalled();
   });
