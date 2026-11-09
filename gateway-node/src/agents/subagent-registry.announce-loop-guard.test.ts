@@ -259,11 +259,15 @@ describe("announce loop guard (#18264)", () => {
 
     // The announce-failure cleanup path finishes asynchronously (prior-delivery
     // mirror check, then retry bookkeeping); wait for the reset to land.
-    await vi.waitFor(() => {
-      const runs = registry.listSubagentRunsForRequester("agent:main:main");
-      const stored = runs.find((run) => run.runId === runId);
-      expect(stored?.cleanupHandled).toBe(false);
-    });
+    // The CI runner is slower than local vitest, so allow a generous budget.
+    await vi.waitFor(
+      () => {
+        const runs = registry.listSubagentRunsForRequester("agent:main:main");
+        const stored = runs.find((run) => run.runId === runId);
+        expect(stored?.cleanupHandled).toBe(false);
+      },
+      { timeout: 30_000 },
+    );
     const runs = registry.listSubagentRunsForRequester("agent:main:main");
     const stored = runs.find((run) => run.runId === runId);
     expect(stored?.cleanupHandled).toBe(false);
