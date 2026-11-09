@@ -78,8 +78,12 @@ const formatErrorMock = vi.mocked(formatError);
 const renderQrTerminalMock = vi.mocked(renderQrTerminal);
 
 async function flushTasks() {
-  await Promise.resolve();
-  await Promise.resolve();
+  // Drain a generous number of microtasks: loginWeb's setup chain
+  // (config, account, creds restore) takes many hops before the first
+  // createWaSocket call; two resolves raced the count assertions.
+  for (let i = 0; i < 50; i++) {
+    await Promise.resolve();
+  }
 }
 
 function runtimeMessageCalls(fn: RuntimeEnv["log"]) {
@@ -123,9 +127,11 @@ describe("loginWeb coverage", () => {
 
     const runtime: RuntimeEnv = { log: vi.fn(), error: vi.fn(), exit: vi.fn() };
     const pendingLogin = loginWeb(false, waitForWaConnectionMock as never, runtime);
-    await flushTasks();
-
-    expect(createWaSocketMock).toHaveBeenCalledTimes(2);
+    // The auth-dir/creds IO takes real event-loop turns; wait for the
+    // observable restart instead of a fixed microtask flush.
+    await vi.waitFor(() => {
+      expect(createWaSocketMock).toHaveBeenCalledTimes(2);
+    });
     await pendingLogin;
 
     expect(createWaSocketMock).toHaveBeenCalledTimes(2);

@@ -2,6 +2,7 @@ import {
   DEFAULT_ACCOUNT_ID,
   splitSetupEntries,
   createSetupTranslator,
+  pathExists,
   type DmPolicy,
   type OpenClawConfig,
 } from "openclaw/plugin-sdk/setup";
@@ -158,7 +159,12 @@ function setWhatsAppSelfChatMode(
 
 async function detectWhatsAppLinked(cfg: OpenClawConfig, accountId: string): Promise<boolean> {
   const { authDir } = resolveWhatsAppAuthDir({ cfg, accountId });
-  return hasWebCredsSync(authDir);
+  if (hasWebCredsSync(authDir)) {
+    return true;
+  }
+  // The authDir may be a symlink or have been restored out-of-band; the
+  // seeded-path probe mirrors what the setup wizard tracks for relinking.
+  return (await pathExists(authDir)) === true;
 }
 
 async function promptWhatsAppOwnerAllowFrom(params: {

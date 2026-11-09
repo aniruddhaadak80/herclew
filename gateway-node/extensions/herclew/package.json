@@ -2,5 +2,8 @@
   "name": "@openclaw/herclew",
   "version": "1.0.0",
   "main": "index.ts",
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "@openclaw/plugin-sdk": "workspace:*"
+  }
 }

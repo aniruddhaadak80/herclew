@@ -14,11 +14,43 @@ function getTypeScript() {
 const baseTestSuffixes = [".test.ts", ".test-utils.ts", ".test-harness.ts", ".e2e-harness.ts"];
 
 export function resolveRepoRoot(importMetaUrl) {
-  // Walk up from the caller's directory until we find the repo root (.git).
-  // This handles callers at any depth (scripts/*.mjs, scripts/lib/*.mjs, etc.)
-  // instead of assuming a fixed number of parent traversals.
+  // Walk up from the caller's directory until we find the repo root:
+  // the nearest ancestor containing the host (openclaw) package.json
+  // whose ancestry includes a .git marker. Extensions ship their own
+  // @openclaw/* package.jsons, so a bare package.json match would stop
+  // at extensions/<name>; the host package name disambiguates.
+  // Nested checkouts put the .git dir one level above the host root.
+  const { root } = path.parse(path.dirname(fileURLToPath(importMetaUrl)));
   let dir = path.dirname(fileURLToPath(importMetaUrl));
-  const { root } = path.parse(dir);
+  let packageRoot = null;
+  let current = dir;
+  while (current !== root) {
+    const pkgPath = path.join(current, "package.json");
+    if (existsSync(pkgPath)) {
+      try {
+        const name = require(pkgPath).name;
+        if (name === "openclaw") {
+          if (!packageRoot) {
+            packageRoot = current;
+          }
+          break;
+        }
+      } catch {
+        // fall through to the next ancestor
+      }
+    }
+    current = path.dirname(current);
+  }
+  if (packageRoot) {
+    let ancestor = path.dirname(packageRoot);
+    while (ancestor !== root) {
+      if (existsSync(path.join(ancestor, ".git"))) {
+        return packageRoot;
+      }
+      ancestor = path.dirname(ancestor);
+    }
+  }
+  dir = path.dirname(fileURLToPath(importMetaUrl));
   while (dir !== root) {
     if (existsSync(path.join(dir, ".git"))) {
       return dir;

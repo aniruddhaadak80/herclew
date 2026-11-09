@@ -101,7 +101,7 @@ describe("qa multipass runtime", () => {
 
     expect(script).toContain("pnpm install --frozen-lockfile");
     expect(script).toContain("pnpm build");
-    expect(script).toContain(`corepack prepare '${readRootPackageManager()}' --activate`);
+    expect(script).toContain(`corepack prepare 'pnpm@${plan.pnpmVersion}' --activate`);
     expect(script).toContain("'pnpm' 'openclaw' 'qa' 'suite' '--transport' 'qa-channel'");
     expect(script).toContain("'--provider-mode' 'live-frontier'");
     expect(script).toContain("'--scenario' 'channel-chat-baseline'");
