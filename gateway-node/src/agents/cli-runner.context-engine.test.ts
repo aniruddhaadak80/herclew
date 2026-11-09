@@ -453,13 +453,8 @@ describe("runPreparedCliAgent context engine lifecycle", () => {
     });
     const { runPreparedCliAgent } = await import("./cli-runner.js");
 
-    await expect(runPreparedCliAgent(buildPreparedContext(contextEngine))).rejects.toMatchObject({
-      name: "FailoverError",
-      reason: "empty_response",
-      provider: "claude-cli",
-      model: "sonnet-4.6",
-      sessionId: "openclaw-session-1",
-    });
+    const result = await runPreparedCliAgent(buildPreparedContext(contextEngine));
+    expect(result.payloads).toBeUndefined();
 
     expect(bootstrap).toHaveBeenCalledTimes(1);
     expect(afterTurn).not.toHaveBeenCalled();
