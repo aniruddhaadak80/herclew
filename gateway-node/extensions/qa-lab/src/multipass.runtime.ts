@@ -163,10 +163,15 @@ function isPathInside(parentPath: string, childPath: string) {
 }
 
 function validatePnpmVersion(version: string) {
-  if (!/^[0-9A-Za-z.+_-]+$/u.test(version)) {
+  // packageManager is declared as `pnpm@<version>+sha512.<hash>`. Only the
+  // version part is valid for `corepack prepare pnpm@<version>`, so strip
+  // the hash suffix (base64 hashes contain `/` and `=` which would also
+  // fail a strict version check).
+  const bare = version.split("+", 1)[0];
+  if (!/^[0-9A-Za-z.+_-]+$/u.test(bare)) {
     throw new Error(`unsupported pnpm version in packageManager: ${version}`);
   }
-  return version;
+  return bare;
 }
 
 function resolveMountedOutputPath(repoRoot: string, hostPath: string) {
