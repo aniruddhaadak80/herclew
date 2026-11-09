@@ -101,7 +101,10 @@ describe("qa multipass runtime", () => {
 
     expect(script).toContain("pnpm install --frozen-lockfile");
     expect(script).toContain("pnpm build");
-    expect(script).toContain(`corepack prepare '${readRootPackageManager()}' --activate`);
+    // The validator strips the `+sha512...` suffix from packageManager so
+    // `corepack prepare` only sees the bare version.
+    const bareVersion = (readRootPackageManager() ?? "").replace(/^pnpm@v?/, "").split("+", 1)[0];
+    expect(script).toContain(`corepack prepare 'pnpm@${bareVersion}' --activate`);
     expect(script).toContain("'pnpm' 'openclaw' 'qa' 'suite' '--transport' 'qa-channel'");
     expect(script).toContain("'--provider-mode' 'live-frontier'");
     expect(script).toContain("'--scenario' 'channel-chat-baseline'");
