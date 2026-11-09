@@ -40,7 +40,11 @@ type SessionExportWarningSummary = {
 };
 
 async function loadTemplate(fileName: string): Promise<string> {
-  return await fsp.readFile(path.join(EXPORT_HTML_DIR, fileName), "utf-8");
+  // Concatenate with "/" instead of path.join: on Windows path.join would turn
+  // the "vendor/marked.min.js" segment into backslashes, and the suffix-matched
+  // template harness (and any consumer matching on the portable path) would
+  // stop recognizing the file.
+  return await fsp.readFile(`${EXPORT_HTML_DIR}/${fileName}`, "utf-8");
 }
 
 function replaceHtmlPlaceholder(template: string, name: string, value: string): string {
@@ -67,8 +71,8 @@ async function generateHtml(sessionData: SessionData): Promise<string> {
     loadTemplate("template.html"),
     loadTemplate("template.css"),
     loadTemplate("template.js"),
-    loadTemplate(path.join("vendor", "marked.min.js")),
-    loadTemplate(path.join("vendor", "highlight.min.js")),
+    loadTemplate("vendor/marked.min.js"),
+    loadTemplate("vendor/highlight.min.js"),
   ]);
 
   // Use pi-mono dark theme colors (matching their theme/dark.json)
