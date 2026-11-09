@@ -7,7 +7,13 @@ import { resolveAcpxPluginConfig, resolveAcpxPluginRoot } from "./config.js";
 const requireFromTest = createRequire(import.meta.url);
 const TSX_IMPORT = requireFromTest.resolve("tsx");
 
-function expectedSourceMcpServerArgs(entrypoint: string): string[] {
+function expectedMcpServerArgs(entrypoint: string): string[] {
+  // CI builds before it tests, and the config prefers the built entrypoint
+  // whenever it exists. Mirror that choice so this stays agnostic to build order.
+  const distEntry = path.resolve(entrypoint.replace(/^src\//, "dist/").replace(/\.ts$/, ".js"));
+  if (fs.existsSync(distEntry)) {
+    return [distEntry];
+  }
   return ["--import", TSX_IMPORT, path.resolve(entrypoint)];
 }
 
@@ -164,7 +170,7 @@ describe("embedded acpx plugin config", () => {
     const server = resolved.mcpServers["openclaw-plugin-tools"];
     expect(server).toEqual({
       command: process.execPath,
-      args: expectedSourceMcpServerArgs("src/mcp/plugin-tools-serve.ts"),
+      args: expectedMcpServerArgs("src/mcp/plugin-tools-serve.ts"),
     });
   });
 
@@ -179,7 +185,7 @@ describe("embedded acpx plugin config", () => {
     const server = resolved.mcpServers["openclaw-tools"];
     expect(server).toEqual({
       command: process.execPath,
-      args: expectedSourceMcpServerArgs("src/mcp/openclaw-tools-serve.ts"),
+      args: expectedMcpServerArgs("src/mcp/openclaw-tools-serve.ts"),
     });
   });
 
