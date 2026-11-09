@@ -257,6 +257,13 @@ describe("announce loop guard (#18264)", () => {
     await Promise.resolve();
     await Promise.resolve();
 
+    // The announce-failure cleanup path finishes asynchronously (prior-delivery
+    // mirror check, then retry bookkeeping); wait for the reset to land.
+    await vi.waitFor(() => {
+      const runs = registry.listSubagentRunsForRequester("agent:main:main");
+      const stored = runs.find((run) => run.runId === runId);
+      expect(stored?.cleanupHandled).toBe(false);
+    });
     const runs = registry.listSubagentRunsForRequester("agent:main:main");
     const stored = runs.find((run) => run.runId === runId);
     expect(stored?.cleanupHandled).toBe(false);
