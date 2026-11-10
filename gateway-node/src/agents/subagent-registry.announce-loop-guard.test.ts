@@ -77,6 +77,30 @@ describe("announce loop guard (#18264)", () => {
     return entry;
   }
 
+  /**
+   * The announce cleanup path settles over a variable number of microtask hops
+   * (prior-delivery mirror check, then retry bookkeeping) and can also wait on
+   * a timer. Poll while advancing the fake clock instead of assuming a fixed
+   * number of ticks, otherwise the assertion depends on how fast the host
+   * runtime drains the queue.
+   */
+  async function waitForStoredRun(
+    runId: string,
+    predicate: (run: SubagentRunRecord | undefined) => boolean,
+    attempts = 200,
+  ): Promise<SubagentRunRecord | undefined> {
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      const runs = registry.listSubagentRunsForRequester("agent:main:main");
+      const stored = runs.find((run) => run.runId === runId);
+      if (predicate(stored)) {
+        return stored;
+      }
+      await vi.advanceTimersByTimeAsync(10);
+    }
+    const runs = registry.listSubagentRunsForRequester("agent:main:main");
+    return runs.find((run) => run.runId === runId);
+  }
+
   beforeAll(async () => {
     vi.resetModules();
     registry = await import("./subagent-registry.js");
@@ -254,22 +278,8 @@ describe("announce loop guard (#18264)", () => {
     );
 
     registry.initSubagentRegistry();
-    await Promise.resolve();
-    await Promise.resolve();
 
-    // The announce-failure cleanup path finishes asynchronously (prior-delivery
-    // mirror check, then retry bookkeeping); wait for the reset to land.
-    // The CI runner is slower than local vitest, so allow a generous budget.
-    await vi.waitFor(
-      () => {
-        const runs = registry.listSubagentRunsForRequester("agent:main:main");
-        const stored = runs.find((run) => run.runId === runId);
-        expect(stored?.cleanupHandled).toBe(false);
-      },
-      { timeout: 30_000 },
-    );
-    const runs = registry.listSubagentRunsForRequester("agent:main:main");
-    const stored = runs.find((run) => run.runId === runId);
+    const stored = await waitForStoredRun(runId, (run) => run?.cleanupHandled === false);
     expect(stored?.cleanupHandled).toBe(false);
     expect(stored?.cleanupCompletedAt).toBeUndefined();
     expect(stored?.announceRetryCount).toBe(1);
