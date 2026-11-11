@@ -93,7 +93,10 @@ describe("announce loop guard (#18264)", () => {
       const runs = registry.listSubagentRunsForRequester("agent:main:main");
       const stored = runs.find((run) => run.runId === runId);
       if (predicate(stored)) {
-        return stored;
+        // Snapshot: the registry entry keeps mutating (the announce retry
+        // timer can bump `announceRetryCount` again inside this window), so
+        // assert on the state at the moment the predicate matched.
+        return stored ? { ...stored } : undefined;
       }
       await vi.advanceTimersByTimeAsync(10);
     }
