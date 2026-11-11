@@ -7,6 +7,7 @@ describe("skills/sherpa-onnx-tts bin script", () => {
     const scriptPath = path.resolve(
       process.cwd(),
       "skills",
+      "media",
       "sherpa-onnx-tts",
       "bin",
       "sherpa-onnx-tts",

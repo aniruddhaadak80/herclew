@@ -14,19 +14,28 @@ function getTypeScript() {
 const baseTestSuffixes = [".test.ts", ".test-utils.ts", ".test-harness.ts", ".e2e-harness.ts"];
 
 export function resolveRepoRoot(importMetaUrl) {
-  // Walk up from the caller's directory until we find the repo root (.git).
-  // This handles callers at any depth (scripts/*.mjs, scripts/lib/*.mjs, etc.)
-  // instead of assuming a fixed number of parent traversals.
+  // Walk up from the caller's directory to the workspace root: the nearest
+  // ancestor that holds both a package.json and the pnpm workspace file.
+  //
+  // This repository is a monorepo: the git checkout root sits one level above
+  // the package root and has no package.json of its own. Resolving to the git
+  // root would make every source root ("src", "extensions", ...) look missing,
+  // which silently turns the ts-guard scans into no-ops.
   let dir = path.dirname(fileURLToPath(importMetaUrl));
   const { root } = path.parse(dir);
+  let packageRoot;
   while (dir !== root) {
-    if (existsSync(path.join(dir, ".git"))) {
+    const hasPackage = existsSync(path.join(dir, "package.json"));
+    if (hasPackage && existsSync(path.join(dir, "pnpm-workspace.yaml"))) {
       return dir;
+    }
+    if (hasPackage && !packageRoot) {
+      packageRoot = dir;
     }
     dir = path.dirname(dir);
   }
-  // Fallback: two levels up (original behavior).
-  return path.resolve(path.dirname(fileURLToPath(importMetaUrl)), "..", "..");
+  // Fallback: the nearest package root seen, else two levels up (original behavior).
+  return packageRoot ?? path.resolve(path.dirname(fileURLToPath(importMetaUrl)), "..", "..");
 }
 
 export function resolveSourceRoots(repoRoot, relativeRoots) {

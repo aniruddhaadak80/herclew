@@ -1,0 +1,185 @@
+#!/usr/bin/env node
+/**
+ * sherpa-onnx-tts — local text-to-speech through the offline sherpa-onnx CLI.
+ *
+ * The runtime and the voice model are downloaded separately (see SKILL.md) and
+ * their locations are passed in through the environment or through flags.
+ *
+ * Usage:
+ *   sherpa-onnx-tts [--runtime-dir <dir>] [--model-dir <dir>] [--model-file <file>]
+ *                    [--tokens-file <file>] [--data-dir <dir>] [--output <file>] "text"
+ */
+import { spawn } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+
+const USAGE = [
+  "Usage: sherpa-onnx-tts [--runtime-dir <dir>] [--model-dir <dir>] [--model-file <file>] [--tokens-file <file>] [--data-dir <dir>] [--output <file>] \"text\"",
+  "",
+  "Required env (or flags):",
+  "  SHERPA_ONNX_RUNTIME_DIR",
+  "  SHERPA_ONNX_MODEL_DIR",
+].join("\n");
+
+const FLAGS = new Map([
+  ["--runtime-dir", "runtimeDir"],
+  ["--model-dir", "modelDir"],
+  ["--model-file", "modelFile"],
+  ["--tokens-file", "tokensFile"],
+  ["--data-dir", "dataDir"],
+  ["--output", "output"],
+  ["-o", "output"],
+]);
+
+function parseArgs(argv) {
+  const options = {
+    runtimeDir: process.env.SHERPA_ONNX_RUNTIME_DIR?.trim() || "",
+    modelDir: process.env.SHERPA_ONNX_MODEL_DIR?.trim() || "",
+    modelFile: process.env.SHERPA_ONNX_MODEL_FILE?.trim() || "",
+    tokensFile: process.env.SHERPA_ONNX_TOKENS_FILE?.trim() || "",
+    dataDir: process.env.SHERPA_ONNX_DATA_DIR?.trim() || "",
+    output: process.env.SHERPA_ONNX_OUTPUT?.trim() || "",
+    text: "",
+  };
+  const textParts = [];
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    const key = FLAGS.get(arg);
+    if (key) {
+      const value = argv[index + 1];
+      if (value === undefined) {
+        throw new Error(`Missing value for ${arg}`);
+      }
+      options[key] = value;
+      index += 1;
+      continue;
+    }
+    textParts.push(arg);
+  }
+  options.text = textParts.join(" ").trim();
+  return options;
+}
+
+function fail(message) {
+  process.stderr.write(`${message}\n\n${USAGE}\n`);
+  process.exit(1);
+}
+
+function isDirectory(candidate) {
+  try {
+    return fs.statSync(candidate).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+function isFile(candidate) {
+  try {
+    return fs.statSync(candidate).isFile();
+  } catch {
+    return false;
+  }
+}
+
+function resolveBinary(runtimeDir) {
+  const names = process.platform === "win32"
+    ? ["sherpa-onnx.exe", "sherpa-onnx"]
+    : ["sherpa-onnx"];
+  for (const name of names) {
+    for (const dir of [path.join(runtimeDir, "bin"), runtimeDir]) {
+      const candidate = path.join(dir, name);
+      if (isFile(candidate)) {
+        return candidate;
+      }
+    }
+  }
+  return undefined;
+}
+
+function resolveModelFile(options) {
+  if (options.modelFile) {
+    return options.modelFile;
+  }
+  let entries = [];
+  try {
+    entries = fs.readdirSync(options.modelDir);
+  } catch {
+    return undefined;
+  }
+  const onnx = entries.filter((entry) => entry.endsWith(".onnx")).sort();
+  if (onnx.length === 0) {
+    return undefined;
+  }
+  return path.join(options.modelDir, onnx[0]);
+}
+
+function resolveTokensFile(options) {
+  if (options.tokensFile) {
+    return options.tokensFile;
+  }
+  try {
+    const entries = fs.readdirSync(options.modelDir).filter((entry) => entry.endsWith(".txt"));
+    if (entries.length > 0) {
+      return path.join(options.modelDir, entries.sort()[0]);
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}
+
+function main() {
+  let options;
+  try {
+    options = parseArgs(process.argv.slice(2));
+  } catch (error) {
+    fail(error instanceof Error ? error.message : String(error));
+    return;
+  }
+
+  if (!options.runtimeDir || !options.modelDir || !isDirectory(options.runtimeDir) || !isDirectory(options.modelDir)) {
+    fail("Missing runtime/model directory.");
+    return;
+  }
+  if (!options.text) {
+    fail("Missing text to synthesize.");
+    return;
+  }
+
+  const binary = resolveBinary(options.runtimeDir);
+  if (!binary) {
+    fail(`sherpa-onnx binary not found under ${options.runtimeDir}.`);
+    return;
+  }
+
+  const modelFile = resolveModelFile(options);
+  if (!modelFile) {
+    fail(`No .onnx model file found under ${options.modelDir}.`);
+    return;
+  }
+
+  const tokensFile = resolveTokensFile(options);
+  const args = [`--vits=${modelFile}`];
+  if (tokensFile) {
+    args.push(`--tokens=${tokensFile}`);
+  }
+  if (options.dataDir) {
+    args.push(`--data-dir=${options.dataDir}`);
+  }
+  if (options.output) {
+    args.push(`--save-wav=${options.output}`);
+  }
+  args.push("--sid=0");
+
+  const child = spawn(binary, args, { stdio: ["pipe", "inherit", "inherit"] });
+  child.stdin.end(`${options.text}\n`);
+  child.on("error", (error) => {
+    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+    process.exit(1);
+  });
+  child.on("close", (code) => {
+    process.exit(code ?? 1);
+  });
+}
+
+main();

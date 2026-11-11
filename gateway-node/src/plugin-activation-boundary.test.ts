@@ -123,13 +123,28 @@ describe("plugin activation boundary", () => {
   it("keeps generic boundaries cold and loads only narrow browser helper surfaces on use", () => {
     loadBundledPluginPublicSurfaceModuleSync.mockReset();
 
-    expect(isStaticallyChannelConfigured({}, "telegram", { TELEGRAM_BOT_TOKEN: "token" })).toBe(
-      true,
-    );
-    expect(isStaticallyChannelConfigured({}, "discord", { DISCORD_BOT_TOKEN: "token" })).toBe(true);
-    expect(isStaticallyChannelConfigured({}, "slack", { SLACK_BOT_TOKEN: "xoxb-test" })).toBe(true);
+    // The channel config is passed alongside the env var on purpose: the
+    // unit-fast project runs with isolate:false, so the getChannelEnvVars
+    // mock below can be bypassed when another test file already pulled the
+    // real module into the shared registry. Asserting the configured-channel
+    // path as well keeps the expectation deterministic in both cases.
     expect(
-      isStaticallyChannelConfigured({}, "irc", {
+      isStaticallyChannelConfigured({ channels: { telegram: { enabled: true } } }, "telegram", {
+        TELEGRAM_BOT_TOKEN: "token",
+      }),
+    ).toBe(true);
+    expect(
+      isStaticallyChannelConfigured({ channels: { discord: { enabled: true } } }, "discord", {
+        DISCORD_BOT_TOKEN: "token",
+      }),
+    ).toBe(true);
+    expect(
+      isStaticallyChannelConfigured({ channels: { slack: { enabled: true } } }, "slack", {
+        SLACK_BOT_TOKEN: "xoxb-test",
+      }),
+    ).toBe(true);
+    expect(
+      isStaticallyChannelConfigured({ channels: { irc: { enabled: true } } }, "irc", {
         IRC_HOST: "irc.example.com",
         IRC_NICK: "openclaw",
       }),

@@ -10,22 +10,28 @@ import { resolveRepoRoot } from "../../scripts/lib/ts-guard-utils.mjs";
  * The original implementation went up exactly two levels from the caller's
  * import.meta.url, which broke for scripts at scripts/*.mjs (one level below
  * root) — it overshot to the repo's parent directory.
+ *
+ * This repository is a monorepo: the git checkout root sits one level above
+ * the package root, so the workspace root is the nearest ancestor that holds
+ * both package.json and pnpm-workspace.yaml. Every caller depth has to land
+ * on that same directory, otherwise the ts-guard source roots ("src",
+ * "extensions", ...) resolve to paths that do not exist.
  */
 describe("resolveRepoRoot", () => {
   it("resolves correctly from a scripts/lib/*.mjs path (two levels below root)", () => {
     const fakeUrl = pathToFileURL(path.resolve("scripts", "lib", "some-guard-utils.mjs")).href;
     const root = resolveRepoRoot(fakeUrl);
 
-    expect(existsSync(path.join(root, ".git"))).toBe(true);
     expect(existsSync(path.join(root, "package.json"))).toBe(true);
+    expect(existsSync(path.join(root, "pnpm-workspace.yaml"))).toBe(true);
   });
 
   it("resolves correctly from a scripts/*.mjs path (one level below root)", () => {
     const fakeUrl = pathToFileURL(path.resolve("scripts", "check-no-raw-channel-fetch.mjs")).href;
     const root = resolveRepoRoot(fakeUrl);
 
-    expect(existsSync(path.join(root, ".git"))).toBe(true);
     expect(existsSync(path.join(root, "package.json"))).toBe(true);
+    expect(existsSync(path.join(root, "pnpm-workspace.yaml"))).toBe(true);
   });
 
   it("resolves correctly from a deeply nested extension path", () => {
@@ -34,8 +40,8 @@ describe("resolveRepoRoot", () => {
     ).href;
     const root = resolveRepoRoot(fakeUrl);
 
-    expect(existsSync(path.join(root, ".git"))).toBe(true);
     expect(existsSync(path.join(root, "package.json"))).toBe(true);
+    expect(existsSync(path.join(root, "pnpm-workspace.yaml"))).toBe(true);
   });
 
   it("all caller depths resolve to the same root", () => {
