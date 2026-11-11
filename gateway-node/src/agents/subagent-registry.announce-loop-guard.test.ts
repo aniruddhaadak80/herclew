@@ -253,6 +253,12 @@ describe("announce loop guard (#18264)", () => {
   test("announce rejection resets cleanupHandled so retries can resume", async () => {
     mocks.runSubagentAnnounceFlow.mockReset();
     mocks.runSubagentAnnounceFlow.mockRejectedValueOnce(new Error("announce failed"));
+    // `mockReset` drops the default resolver, so keep an explicit one: every
+    // later announce attempt (the retry timer can fire inside this spec's
+    // poll window) must still return a promise. Returning `undefined` makes
+    // the registry throw while chaining `.then()` on the announce result and
+    // leaves the entry stuck with `cleanupHandled = true`.
+    mocks.runSubagentAnnounceFlow.mockResolvedValue(false);
     registry.resetSubagentRegistryForTests();
 
     const now = Date.now();
