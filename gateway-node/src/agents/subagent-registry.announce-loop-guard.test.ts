@@ -1,4 +1,5 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
+import { createSubagentRegistryLifecycleController } from "./subagent-registry-lifecycle.js";
 import type { SubagentRunRecord } from "./subagent-registry.types.js";
 
 /**
@@ -75,39 +76,6 @@ describe("announce loop guard (#18264)", () => {
       throw new Error(`expected subagent run ${runId}`);
     }
     return entry;
-  }
-
-  /**
-   * The announce cleanup path settles over a variable number of microtask hops
-   * (prior-delivery mirror check, then retry bookkeeping) and can also wait on
-   * a timer. Poll while flushing pending microtasks instead of assuming a
-   * fixed number of ticks, otherwise the assertion depends on how fast the
-   * host runtime drains the queue.
-   *
-   * The clock is deliberately not advanced: the announce retry backoff is 1s,
-   * so advancing the fake clock far enough would fire the retry, burn the
-   * retry budget and give up on the run before the rejection reset could be
-   * observed. Flushing microtasks only keeps the assertion on the reset
-   * itself and leaves the backoff alone.
-   */
-  async function waitForStoredRun(
-    runId: string,
-    predicate: (run: SubagentRunRecord | undefined) => boolean,
-    attempts = 200,
-  ): Promise<SubagentRunRecord | undefined> {
-    for (let attempt = 0; attempt < attempts; attempt += 1) {
-      const runs = registry.listSubagentRunsForRequester("agent:main:main");
-      const stored = runs.find((run) => run.runId === runId);
-      if (predicate(stored)) {
-        // Snapshot: the registry entry keeps mutating (the announce retry
-        // timer can bump `announceRetryCount` again inside this window), so
-        // assert on the state at the moment the predicate matched.
-        return stored ? { ...stored } : undefined;
-      }
-      await vi.advanceTimersByTimeAsync(0);
-    }
-    const runs = registry.listSubagentRunsForRequester("agent:main:main");
-    return runs.find((run) => run.runId === runId);
   }
 
   beforeAll(async () => {
@@ -260,44 +228,60 @@ describe("announce loop guard (#18264)", () => {
   });
 
   test("announce rejection resets cleanupHandled so retries can resume", async () => {
-    mocks.runSubagentAnnounceFlow.mockReset();
-    mocks.runSubagentAnnounceFlow.mockRejectedValueOnce(new Error("announce failed"));
-    // `mockReset` drops the default resolver, so keep an explicit one: every
-    // later announce attempt (the retry timer can fire inside this spec's
-    // poll window) must still return a promise. Returning `undefined` makes
-    // the registry throw while chaining `.then()` on the announce result and
-    // leaves the entry stuck with `cleanupHandled = true`.
-    mocks.runSubagentAnnounceFlow.mockResolvedValue(false);
-    registry.resetSubagentRegistryForTests();
-
+    // Drive the cleanup flow through the lifecycle controller directly.
+    // Going through initSubagentRegistry() makes the spec depend on the
+    // shared restore state, and the gateway projects run without module
+    // isolation, so which spec restores and resumes a run is not
+    // deterministic there. The retry timer also fires inside any poll
+    // window that advances the fake clock, which is what made the registry
+    // level version of this spec flap between "cleanupHandled stayed true"
+    // and "announceRetryCount was 2 instead of 1".
     const now = Date.now();
     const runId = "test-announce-rejection";
-    mocks.loadSubagentRegistryFromDisk.mockReturnValue(
-      new Map([
-        [
-          runId,
-          {
-            runId,
-            childSessionKey: "agent:main:subagent:child-1",
-            requesterSessionKey: "agent:main:main",
-            requesterDisplayKey: "agent:main:main",
-            task: "rejection test",
-            cleanup: "keep" as const,
-            createdAt: now - 30_000,
-            startedAt: now - 20_000,
-            endedAt: now - 10_000,
-            cleanupHandled: false,
-          },
-        ],
-      ]),
-    );
+    const entry: SubagentRunRecord = {
+      runId,
+      childSessionKey: "agent:main:subagent:child-1",
+      requesterSessionKey: "agent:main:main",
+      requesterDisplayKey: "agent:main:main",
+      task: "rejection test",
+      cleanup: "keep",
+      createdAt: now - 30_000,
+      startedAt: now - 20_000,
+      endedAt: now - 10_000,
+      cleanupHandled: false,
+    };
+    const runs = new Map<string, SubagentRunRecord>([[runId, entry]]);
+    const announceFlow = vi.fn(async () => {
+      throw new Error("announce failed");
+    });
+    const controller = createSubagentRegistryLifecycleController({
+      runs,
+      resumedRuns: new Set<string>(),
+      subagentAnnounceTimeoutMs: 1_000,
+      persist: vi.fn(),
+      clearPendingLifecycleError: vi.fn(),
+      countPendingDescendantRuns: () => 0,
+      suppressAnnounceForSteerRestart: () => false,
+      shouldEmitEndedHookForRun: () => false,
+      emitSubagentEndedHookForRun: vi.fn(async () => {}),
+      notifyContextEngineSubagentEnded: vi.fn(async () => {}),
+      resumeSubagentRun: vi.fn(),
+      callGateway: mocks.callGateway as never,
+      captureSubagentCompletionReply: mocks.captureSubagentCompletionReply as never,
+      runSubagentAnnounceFlow: announceFlow as never,
+      warn: vi.fn(),
+    });
 
-    registry.initSubagentRegistry();
+    expect(controller.startSubagentAnnounceCleanupFlow(runId, entry)).toBe(true);
+    // The rejected announce is handled on the microtask queue.
+    await vi.advanceTimersByTimeAsync(0);
 
-    const stored = await waitForStoredRun(runId, (run) => run?.cleanupHandled === false);
-    expect(stored?.cleanupHandled).toBe(false);
-    expect(stored?.cleanupCompletedAt).toBeUndefined();
-    expect(stored?.announceRetryCount).toBe(1);
-    expect(stored?.lastAnnounceRetryAt).toBeTypeOf("number");
+    expect(announceFlow).toHaveBeenCalledTimes(1);
+    // The rejection must clear the cleanup marker so a later retry can pick
+    // the run up again, and it must not complete the cleanup.
+    expect(entry.cleanupHandled).toBe(false);
+    expect(entry.cleanupCompletedAt).toBeUndefined();
+    expect(entry.announceRetryCount).toBe(1);
+    expect(entry.lastAnnounceRetryAt).toBeTypeOf("number");
   });
 });
