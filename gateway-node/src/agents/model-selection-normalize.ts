@@ -48,6 +48,16 @@ function normalizeProviderModelId(
     allowPluginNormalization?: boolean;
   },
 ): string {
+  // "*" is the provider-wildcard sentinel used by allowlist keys
+  // ("provider/*"), never a concrete model id. Plugin and manifest model-id
+  // normalization maps concrete ids only (every hook passes unknown ids
+  // through unchanged), and mutating "*" would break wildcard matching in
+  // isModelKeyAllowedBySet. Short-circuit here so wildcard allowlist parsing
+  // never triggers plugin discovery, which otherwise re-resolves the full
+  // plugin snapshot per call when no config-scoped cache key exists.
+  if (model === "*") {
+    return "*";
+  }
   const staticModelId = normalizeStaticProviderModelId(provider, model, {
     allowManifestNormalization: options?.allowManifestNormalization,
     manifestPlugins: options?.manifestPlugins,
