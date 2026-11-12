@@ -173,7 +173,12 @@ function installPollingStallWatchdogHarness(dateNowSequence: readonly number[] =
 
   return {
     async waitForWatchdog() {
-      for (let attempt = 0; attempt < 20; attempt += 1) {
+      // The watchdog installs after the first `drainOnce()` finishes, and that
+      // drain performs real spool I/O. Under CI scheduling those reads can
+      // take more turns than a tight hop budget allows, so keep yielding real
+      // event-loop turns (only the timer globals are mocked here) until the
+      // production `setInterval` call lands.
+      for (let attempt = 0; attempt < 500; attempt += 1) {
         if (watchdog) {
           break;
         }
