@@ -80,9 +80,15 @@ describe("announce loop guard (#18264)", () => {
   /**
    * The announce cleanup path settles over a variable number of microtask hops
    * (prior-delivery mirror check, then retry bookkeeping) and can also wait on
-   * a timer. Poll while advancing the fake clock instead of assuming a fixed
-   * number of ticks, otherwise the assertion depends on how fast the host
-   * runtime drains the queue.
+   * a timer. Poll while flushing pending microtasks instead of assuming a
+   * fixed number of ticks, otherwise the assertion depends on how fast the
+   * host runtime drains the queue.
+   *
+   * The clock is deliberately not advanced: the announce retry backoff is 1s,
+   * so advancing the fake clock far enough would fire the retry, burn the
+   * retry budget and give up on the run before the rejection reset could be
+   * observed. Flushing microtasks only keeps the assertion on the reset
+   * itself and leaves the backoff alone.
    */
   async function waitForStoredRun(
     runId: string,
@@ -98,7 +104,7 @@ describe("announce loop guard (#18264)", () => {
         // assert on the state at the moment the predicate matched.
         return stored ? { ...stored } : undefined;
       }
-      await vi.advanceTimersByTimeAsync(10);
+      await vi.advanceTimersByTimeAsync(0);
     }
     const runs = registry.listSubagentRunsForRequester("agent:main:main");
     return runs.find((run) => run.runId === runId);
