@@ -1,0 +1,32 @@
+# Dependabot configuration (repo root)
+#
+# The nested gateway-node/.github/dependabot.yml is the upstream-derived
+# config; this root file exists to pin down repo-wide suppression rules that
+# must survive regardless of which config GitHub's Dependabot discovery
+# picks up.
+#
+# sharp: 0.35.x ships broken prebuilt libvips binaries - decoding common PNG
+# fixtures throws "vipspng: libpng read error" / "libspng read error" on both
+# Windows 11 local runs and ubuntu-24.04 CI runners. 0.33.5 decodes the same
+# fixtures fine everywhere. Keep 0.33.x pinned (root optionalDependencies and
+# gateway-node/extensions/media-understanding-core) until upstream publishes
+# fixed prebuilts. See PR #7 for the verification details.
+
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /gateway-node
+    schedule:
+      interval: weekly
+    ignore:
+      - dependency-name: sharp
+        versions: [">=0.34"]
+
+  - package-ecosystem: npm
+    directory: /gateway-node/extensions/media-understanding-core
+    schedule:
+      interval: weekly
+    ignore:
+      - dependency-name: sharp
+        versions: [">=0.34"]

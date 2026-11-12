@@ -18,6 +18,12 @@ updates:
       interval: daily
     cooldown:
       default-days: 2
+    # sharp >= 0.34 ships broken prebuilt libvips binaries (vipspng/libspng
+    # "read error" decoding common PNG fixtures, verified on Windows 11 and
+    # ubuntu-24.04). Keep 0.33.x until upstream publishes working prebuilts.
+    ignore:
+      - dependency-name: sharp
+        versions: [">=0.34"]
     groups:
       production:
         dependency-type: production
@@ -30,6 +36,21 @@ updates:
           - minor
           - patch
     open-pull-requests-limit: 20
+    registries:
+      - npm-npmjs
+
+  # npm dependencies - media-understanding-core extension
+  - package-ecosystem: npm
+    directory: /extensions/media-understanding-core
+    schedule:
+      interval: daily
+    cooldown:
+      default-days: 2
+    # Same sharp prebuilt-binary breakage as above; keep the 0.33.5 pin.
+    ignore:
+      - dependency-name: sharp
+        versions: [">=0.34"]
+    open-pull-requests-limit: 5
     registries:
       - npm-npmjs
 
