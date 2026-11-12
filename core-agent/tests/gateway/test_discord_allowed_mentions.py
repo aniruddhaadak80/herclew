@@ -52,14 +52,27 @@ def _ensure_discord_mock():
         discord_mod.DMChannel = type("DMChannel", (), {})
         discord_mod.Thread = type("Thread", (), {})
         discord_mod.ForumChannel = type("ForumChannel", (), {})
-        discord_mod.ui = SimpleNamespace(View=object, button=lambda *a, **k: (lambda fn: fn), Button=object)
-        discord_mod.ButtonStyle = SimpleNamespace(success=1, primary=2, danger=3, green=1, blurple=2, red=3, grey=4, secondary=5)
-        discord_mod.Color = SimpleNamespace(orange=lambda: 1, green=lambda: 2, blue=lambda: 3, red=lambda: 4)
+        discord_mod.ui = SimpleNamespace(
+            View=object, button=lambda *a, **k: lambda fn: fn, Button=object
+        )
+        discord_mod.ButtonStyle = SimpleNamespace(
+            success=1,
+            primary=2,
+            danger=3,
+            green=1,
+            blurple=2,
+            red=3,
+            grey=4,
+            secondary=5,
+        )
+        discord_mod.Color = SimpleNamespace(
+            orange=lambda: 1, green=lambda: 2, blue=lambda: 3, red=lambda: 4
+        )
         discord_mod.Interaction = object
         discord_mod.Embed = MagicMock
         discord_mod.app_commands = SimpleNamespace(
-            describe=lambda **kwargs: (lambda fn: fn),
-            choices=lambda **kwargs: (lambda fn: fn),
+            describe=lambda **kwargs: lambda fn: fn,
+            choices=lambda **kwargs: lambda fn: fn,
             Choice=lambda **kwargs: SimpleNamespace(**kwargs),
         )
         discord_mod.opus = SimpleNamespace(is_loaded=lambda: True)
@@ -77,6 +90,19 @@ def _ensure_discord_mock():
     # by another test's _ensure_discord_mock, force the AllowedMentions
     # stand-in onto it — _build_allowed_mentions() reads this attribute.
     sys.modules["discord"].AllowedMentions = _FakeAllowedMentions
+
+    # The adapter module captures ``discord`` at import time. When another test
+    # file imported it first, it holds a different stub than the one in
+    # sys.modules, so patch the object the adapter actually uses as well -
+    # otherwise AllowedMentions stays a MagicMock and every flag assertion
+    # compares against a mock attribute.
+    try:
+        from gateway.platforms import discord as discord_adapter
+    except Exception:  # pragma: no cover - import order safety net
+        return
+    adapter_discord = getattr(discord_adapter, "discord", None)
+    if adapter_discord is not None:
+        adapter_discord.AllowedMentions = _FakeAllowedMentions
 
 
 _ensure_discord_mock()
@@ -128,15 +154,26 @@ def test_env_var_can_disable_users(monkeypatch):
     assert am.replied_user is True
 
 
-@pytest.mark.parametrize("raw, expected", [
-    ("true", True), ("True", True), ("TRUE", True),
-    ("1", True), ("yes", True), ("YES", True), ("on", True),
-    ("false", False), ("False", False), ("0", False),
-    ("no", False), ("off", False),
-    ("", False),                 # empty falls back to default (False for everyone)
-    ("garbage", False),          # unknown falls back to default
-    (" true ", True),            # whitespace tolerated
-])
+@pytest.mark.parametrize(
+    "raw, expected",
+    [
+        ("true", True),
+        ("True", True),
+        ("TRUE", True),
+        ("1", True),
+        ("yes", True),
+        ("YES", True),
+        ("on", True),
+        ("false", False),
+        ("False", False),
+        ("0", False),
+        ("no", False),
+        ("off", False),
+        ("", False),  # empty falls back to default (False for everyone)
+        ("garbage", False),  # unknown falls back to default
+        (" true ", True),  # whitespace tolerated
+    ],
+)
 def test_everyone_boolean_parsing(monkeypatch, raw, expected):
     monkeypatch.setenv("DISCORD_ALLOW_MENTION_EVERYONE", raw)
     am = _build_allowed_mentions()
