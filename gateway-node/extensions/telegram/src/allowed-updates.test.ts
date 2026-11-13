@@ -20,6 +20,7 @@ describe("resolveTelegramAllowedUpdates", () => {
       "edited_business_message",
       "deleted_business_messages",
       "guest_message",
+      "stopped_message_generation",
       "inline_query",
       "chosen_inline_result",
       "callback_query",
@@ -33,6 +34,7 @@ describe("resolveTelegramAllowedUpdates", () => {
       "chat_join_request",
       "chat_boost",
       "removed_chat_boost",
+      "subscription",
     ]);
     expect(updates).toEqual([...DEFAULT_TELEGRAM_UPDATE_TYPES, "message_reaction"]);
   });
