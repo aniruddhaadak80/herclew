@@ -12,12 +12,36 @@ import subprocess
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import pytest
+
 from hermes_cli.main import cmd_update
 
 
-def _make_run_side_effect(
-    branch="main", verify_ok=True, commit_count="1", dirty=False
-):
+@pytest.fixture(autouse=True)
+def fake_git_checkout(tmp_path, monkeypatch):
+    """Point PROJECT_ROOT at a temp "checkout" containing .git.
+
+    In the monorepo, ``core-agent/`` has no ``.git`` (the repo root is the
+    parent), so ``cmd_update`` would classify the install as pip-installed
+    and take the pip path on Linux CI instead of the git path these tests
+    exercise. Forcing a fake git checkout makes the git-update path
+    deterministic on every platform.
+    """
+    checkout = tmp_path / "checkout"
+    (checkout / ".git").mkdir(parents=True)
+    # _refresh_active_lazy_features() spawns real `uv pip install` processes
+    # for previously activated lazy backends — real network I/O that must not
+    # run from a unit test.
+    monkeypatch.setattr("hermes_cli.main.PROJECT_ROOT", checkout)
+    monkeypatch.setattr("hermes_cli.main._refresh_active_lazy_features", lambda: None)
+    # find_gateway_pids walks the OS process table (12s+ on Windows) — the
+    # update-flow tests don't care about it. main.py imports it from
+    # hermes_cli.gateway lazily at call time, so patch the source module.
+    monkeypatch.setattr("hermes_cli.gateway.find_gateway_pids", lambda *a, **k: [])
+    return checkout
+
+
+def _make_run_side_effect(branch="main", verify_ok=True, commit_count="1", dirty=False):
     """Minimal subprocess.run side_effect for the update flow."""
 
     def side_effect(cmd, **kwargs):
@@ -122,9 +146,11 @@ class TestUpdateYesConfigMigration:
         # "Non-interactive session" branch instead of prompting.
         import sys as _sys
 
-        with patch("builtins.input", return_value="n") as mock_input, patch.object(
-            _sys.stdin, "isatty", return_value=True
-        ), patch.object(_sys.stdout, "isatty", return_value=True):
+        with (
+            patch("builtins.input", return_value="n") as mock_input,
+            patch.object(_sys.stdin, "isatty", return_value=True),
+            patch.object(_sys.stdout, "isatty", return_value=True),
+        ):
             cmd_update(args)
             # The user was actually prompted.
             assert mock_input.called
@@ -134,4 +160,3 @@ class TestUpdateYesConfigMigration:
 
 class TestUpdateYesStashRestore:
     """--yes auto-restores the pre-update autostash without prompting."""
-

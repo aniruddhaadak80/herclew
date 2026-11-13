@@ -35,9 +35,11 @@ jobs:
       #
       # The test suite imports fastapi (web) and agent-client-protocol (acp)
       # at module import time, so those extras must be present or pytest
-      # aborts during collection.
+      # aborts during collection. The `pty` extra provides ptyprocess for the
+      # PTY-backed tests (process_registry interactive stdin, /api/pty
+      # websocket) — without it those tests fail or skip on Linux CI.
       - name: Install Dependencies
-        run: uv sync --frozen --extra dev --extra acp --extra web
+        run: uv sync --frozen --extra dev --extra acp --extra web --extra pty
 
       - name: Run Ruff Lint
         run: uv run --frozen ruff check . --select PLW1514
