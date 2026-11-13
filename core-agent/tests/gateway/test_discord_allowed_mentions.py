@@ -91,19 +91,6 @@ def _ensure_discord_mock():
     # stand-in onto it — _build_allowed_mentions() reads this attribute.
     sys.modules["discord"].AllowedMentions = _FakeAllowedMentions
 
-    # The adapter module captures ``discord`` at import time. When another test
-    # file imported it first, it holds a different stub than the one in
-    # sys.modules, so patch the object the adapter actually uses as well -
-    # otherwise AllowedMentions stays a MagicMock and every flag assertion
-    # compares against a mock attribute.
-    try:
-        from gateway.platforms import discord as discord_adapter
-    except Exception:  # pragma: no cover - import order safety net
-        return
-    adapter_discord = getattr(discord_adapter, "discord", None)
-    if adapter_discord is not None:
-        adapter_discord.AllowedMentions = _FakeAllowedMentions
-
 
 _ensure_discord_mock()
 
@@ -124,6 +111,17 @@ _ENV_VARS = (
 def _clear_allowed_mention_env(monkeypatch):
     for name in _ENV_VARS:
         monkeypatch.delenv(name, raising=False)
+
+    # The adapter module captures ``discord`` at import time. When another test
+    # file imported it first, it holds a different stub than the one in
+    # sys.modules, so patch the object the adapter actually uses as well -
+    # otherwise AllowedMentions stays a MagicMock and every flag assertion
+    # compares against a mock attribute.
+    from gateway.platforms import discord as discord_adapter
+
+    adapter_discord = getattr(discord_adapter, "discord", None)
+    if adapter_discord is not None:
+        adapter_discord.AllowedMentions = _FakeAllowedMentions
 
 
 def test_safe_defaults_block_everyone_and_roles():
