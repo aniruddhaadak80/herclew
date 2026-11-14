@@ -37,9 +37,16 @@ jobs:
       # at module import time, so those extras must be present or pytest
       # aborts during collection. The `pty` extra provides ptyprocess for the
       # PTY-backed tests (process_registry interactive stdin, /api/pty
-      # websocket) — without it those tests fail or skip on Linux CI.
+      # websocket) - without it those tests fail or skip on Linux CI.
+      #
+      # The `sms` extra carries aiohttp. The webhook specs (msgraph, sms,
+      # sse, proxy, matrix) build real aiohttp responses, and without aiohttp
+      # installed the slack spec puts a placeholder MagicMock for it into
+      # sys.modules. Every later spec in the same xdist worker then imported
+      # that placeholder, so real responses compared against mock attributes
+      # and the failures moved around with the worker schedule.
       - name: Install Dependencies
-        run: uv sync --frozen --extra dev --extra acp --extra web --extra pty
+        run: uv sync --frozen --extra dev --extra acp --extra web --extra pty --extra sms
 
       - name: Run Ruff Lint
         run: uv run --frozen ruff check . --select PLW1514
