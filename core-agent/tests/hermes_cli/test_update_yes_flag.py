@@ -29,11 +29,19 @@ def fake_git_checkout(tmp_path, monkeypatch):
     """
     checkout = tmp_path / "checkout"
     (checkout / ".git").mkdir(parents=True)
+    # Patch the module dict the collection-time cmd_update binding executes in,
+    # not the "hermes_cli.main" name. If an earlier test in the same xdist
+    # worker re-imported hermes_cli.main, string-form monkeypatch targets
+    # resolve the NEW module while cmd_update still belongs to the OLD one —
+    # PROJECT_ROOT then points at the repo checkout (no .git in the monorepo)
+    # and cmd_update takes the pip path on Linux CI / zip path on Windows.
+    # setitem on __globals__ is identity-stable and still restores at teardown.
+    main_globals = cmd_update.__globals__
     # _refresh_active_lazy_features() spawns real `uv pip install` processes
     # for previously activated lazy backends — real network I/O that must not
     # run from a unit test.
-    monkeypatch.setattr("hermes_cli.main.PROJECT_ROOT", checkout)
-    monkeypatch.setattr("hermes_cli.main._refresh_active_lazy_features", lambda: None)
+    monkeypatch.setitem(main_globals, "PROJECT_ROOT", checkout)
+    monkeypatch.setitem(main_globals, "_refresh_active_lazy_features", lambda: None)
     # find_gateway_pids walks the OS process table (12s+ on Windows) — the
     # update-flow tests don't care about it. main.py imports it from
     # hermes_cli.gateway lazily at call time, so patch the source module.

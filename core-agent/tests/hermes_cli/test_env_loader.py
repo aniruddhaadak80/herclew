@@ -20,10 +20,14 @@ def test_user_env_overrides_stale_shell_values(tmp_path, monkeypatch):
     assert os.getenv("OPENAI_BASE_URL") == "https://new.example/v1"
 
 
-def test_project_env_overrides_stale_shell_values_when_user_env_missing(tmp_path, monkeypatch):
+def test_project_env_overrides_stale_shell_values_when_user_env_missing(
+    tmp_path, monkeypatch
+):
     home = tmp_path / "hermes"
     project_env = tmp_path / ".env"
-    project_env.write_text("OPENAI_BASE_URL=https://project.example/v1\n", encoding="utf-8")
+    project_env.write_text(
+        "OPENAI_BASE_URL=https://project.example/v1\n", encoding="utf-8"
+    )
 
     monkeypatch.setenv("OPENAI_BASE_URL", "https://old.example/v1")
 
@@ -37,8 +41,7 @@ def test_project_env_is_sanitized_before_loading(tmp_path, monkeypatch):
     home = tmp_path / "hermes"
     project_env = tmp_path / ".env"
     project_env.write_text(
-        "TELEGRAM_BOT_TOKEN=0123456789:test"
-        "ANTHROPIC_API_KEY=sk-ant-test123\n",
+        "TELEGRAM_BOT_TOKEN=0123456789:testANTHROPIC_API_KEY=sk-ant-test123\n",
         encoding="utf-8",
     )
 
@@ -58,7 +61,10 @@ def test_user_env_takes_precedence_over_project_env(tmp_path, monkeypatch):
     user_env = home / ".env"
     project_env = tmp_path / ".env"
     user_env.write_text("OPENAI_BASE_URL=https://user.example/v1\n", encoding="utf-8")
-    project_env.write_text("OPENAI_BASE_URL=https://project.example/v1\nOPENAI_API_KEY=project-key\n", encoding="utf-8")
+    project_env.write_text(
+        "OPENAI_BASE_URL=https://project.example/v1\nOPENAI_API_KEY=project-key\n",
+        encoding="utf-8",
+    )
 
     monkeypatch.setenv("OPENAI_BASE_URL", "https://old.example/v1")
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
@@ -82,7 +88,14 @@ def test_main_import_applies_user_env_over_shell_values(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENAI_BASE_URL", "https://old.example/v1")
     monkeypatch.setenv("HERMES_INFERENCE_PROVIDER", "openrouter")
 
-    sys.modules.pop("hermes_cli.main", None)
+    # monkeypatch.delitem puts the ORIGINAL module object back at teardown. A
+    # bare sys.modules.pop() leaves the re-imported copy registered, splitting
+    # hermes_cli.main into two module objects: later tests that bound
+    # cmd_update / _UpdateOutputStream at collection keep running the OLD
+    # object, while string-form monkeypatch targets ("hermes_cli.main.X") and
+    # isinstance checks against a collection-time import resolve the NEW one —
+    # the patch silently misses and isinstance returns False.
+    monkeypatch.delitem(sys.modules, "hermes_cli.main", raising=False)
     importlib.import_module("hermes_cli.main")
 
     assert os.getenv("OPENAI_BASE_URL") == "https://new.example/v1"
