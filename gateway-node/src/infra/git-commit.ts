@@ -80,8 +80,10 @@ const resolveGitLookupDepth = (searchDir: string, packageRoot: string | null) =>
   if (relative.startsWith("..") || path.isAbsolute(relative)) {
     return undefined;
   }
+  // +1 to reach the package root itself, +1 for layouts where the openclaw
+  // package lives one directory below the checkout root (e.g. gateway-node/).
   const depth = relative ? relative.split(path.sep).filter(Boolean).length : 0;
-  return depth + 1;
+  return depth + 2;
 };
 
 const readCommitFromGit = (

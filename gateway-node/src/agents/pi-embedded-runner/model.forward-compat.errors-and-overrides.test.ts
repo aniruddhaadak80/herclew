@@ -55,8 +55,12 @@ import {
   mockOpenAICodexTemplateModel,
   resetMockDiscoverModels,
 } from "./model.test-harness.js";
+import { resetModelDiscoveryCacheForTest } from "./model-discovery-cache.js";
 
 beforeEach(() => {
+  // The cached Pi stores layer keys by agent dir; reset it alongside the
+  // discoverModels mock so per-test model mocks never hit a stale registry.
+  resetModelDiscoveryCacheForTest();
   resetMockDiscoverModels(discoverModels);
 });
 

@@ -11,6 +11,7 @@ import {
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 import { runPreparedCliAgent } from "./cli-runner.js";
+import { FailoverError } from "./failover-error.js";
 import {
   createManagedRun,
   enqueueSystemEventMock,
@@ -833,9 +834,10 @@ describe("runCliAgent reliability", () => {
       }),
     );
 
-    const result = await runPreparedCliAgent(buildPreparedContext());
-
-    expect(result.payloads).toBeUndefined();
+    // Empty (whitespace-only) output surfaces as a failover error instead of
+    // an llm_output emission; payloads stay undefined on the error path.
+    const attempt = runPreparedCliAgent(buildPreparedContext());
+    await expect(attempt).rejects.toThrow(FailoverError);
     expect(hookRunner.runLlmOutput).not.toHaveBeenCalled();
   });
 

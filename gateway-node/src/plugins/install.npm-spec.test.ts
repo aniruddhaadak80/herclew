@@ -223,10 +223,19 @@ function prunePluginLocalOpenClawPeerLinks(npmRoot: string) {
           .map((scopedEntry) => path.join(entryPath, scopedEntry.name))
       : [entryPath];
     for (const packageDir of packageDirs) {
-      fs.rmSync(path.join(packageDir, "node_modules", "openclaw"), {
-        recursive: true,
-        force: true,
-      });
+      try {
+        fs.rmSync(path.join(packageDir, "node_modules", "openclaw"), {
+          recursive: true,
+          force: true,
+        });
+      } catch (error) {
+        // npm peer layouts can make packageDir/node_modules a symlink or a
+        // non-directory placeholder; pruning is best-effort and must not
+        // fail the install.
+        if ((error as { code?: string }).code !== "ENOTDIR") {
+          throw error;
+        }
+      }
     }
   }
 }

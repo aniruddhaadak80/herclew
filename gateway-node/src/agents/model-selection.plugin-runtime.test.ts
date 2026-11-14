@@ -72,4 +72,22 @@ describe("model-selection plugin runtime normalization", () => {
     });
     expect(normalizeProviderModelIdWithPluginMock).not.toHaveBeenCalled();
   });
+
+  it("never routes the provider-wildcard sentinel through plugin runtime hooks", async () => {
+    const { parseModelRef } = await import("./model-selection.js");
+
+    expect(parseModelRef("vllm/*", "anthropic")).toEqual({
+      provider: "vllm",
+      model: "*",
+    });
+    expect(parseModelRef("openai-codex/*", "anthropic")).toEqual({
+      provider: "openai-codex",
+      model: "*",
+    });
+    // The wildcard sentinel is not a concrete model id; plugin hooks (and the
+    // plugin discovery they trigger) must not run for it. Without this skip
+    // every wildcard allowlist key pays a full plugin-resolution pass per
+    // parse, which timed out model-catalog-visibility on CI.
+    expect(normalizeProviderModelIdWithPluginMock).not.toHaveBeenCalled();
+  });
 });

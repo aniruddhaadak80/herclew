@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli.main import cmd_update, PROJECT_ROOT
+from hermes_cli.main import cmd_update
 
 
 def _make_run_side_effect(branch="main", verify_ok=True, commit_count="0"):
@@ -26,7 +26,9 @@ def _make_run_side_effect(branch="main", verify_ok=True, commit_count="0"):
 
         # git rev-list HEAD..origin/{branch} --count
         if "rev-list" in joined:
-            return subprocess.CompletedProcess(cmd, 0, stdout=f"{commit_count}\n", stderr="")
+            return subprocess.CompletedProcess(
+                cmd, 0, stdout=f"{commit_count}\n", stderr=""
+            )
 
         # Fallback: return a successful CompletedProcess with empty stdout
         return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
@@ -37,6 +39,43 @@ def _make_run_side_effect(branch="main", verify_ok=True, commit_count="0"):
 @pytest.fixture
 def mock_args():
     return SimpleNamespace()
+
+
+@pytest.fixture(autouse=True)
+def fake_git_checkout(tmp_path, monkeypatch):
+    """Point PROJECT_ROOT at a temp "checkout" containing .git.
+
+    Since the core-agent code moved into a monorepo subdirectory,
+    ``core-agent/`` has no ``.git`` (the repo root is the parent), so
+    ``cmd_update`` would classify the install as pip-installed and take the
+    ``pip install --upgrade`` path on Linux CI instead of the git path these
+    tests exercise. (On Windows the missing .git selects the ZIP path, which
+    is equally wrong for these tests.) Forcing a fake git checkout makes the
+    git-update path deterministic on every platform.
+    """
+    checkout = tmp_path / "checkout"
+    (checkout / ".git").mkdir(parents=True)
+    # _update_node_dependencies/_build_web_ui skip directories without a
+    # package.json; provide the three locations the updater touches so the
+    # npm calls happen and can be asserted.
+    (checkout / "package.json").touch()
+    (checkout / "package-lock.json").touch()
+    (checkout / "ui-tui").mkdir()
+    (checkout / "ui-tui" / "package.json").touch()
+    (checkout / "ui-tui" / "package-lock.json").touch()
+    (checkout / "web").mkdir()
+    (checkout / "web" / "package.json").touch()
+    (checkout / "web" / "package-lock.json").touch()
+    # _refresh_active_lazy_features() spawns real `uv pip install` processes
+    # for previously activated lazy backends — real network I/O that must not
+    # run from a unit test.
+    monkeypatch.setattr("hermes_cli.main.PROJECT_ROOT", checkout)
+    monkeypatch.setattr("hermes_cli.main._refresh_active_lazy_features", lambda: None)
+    # find_gateway_pids walks the OS process table (12s+ on Windows) — the
+    # update-flow tests don't care about it. main.py imports it from
+    # hermes_cli.gateway lazily at call time, so patch the source module.
+    monkeypatch.setattr("hermes_cli.gateway.find_gateway_pids", lambda *a, **k: [])
+    return checkout
 
 
 class TestCmdUpdateBranchFallback:
@@ -53,7 +92,9 @@ class TestCmdUpdateBranchFallback:
 
         cmd_update(mock_args)
 
-        commands = [" ".join(str(a) for a in c.args[0]) for c in mock_run.call_args_list]
+        commands = [
+            " ".join(str(a) for a in c.args[0]) for c in mock_run.call_args_list
+        ]
 
         # rev-list should use origin/main, not origin/fix/stoicneko
         rev_list_cmds = [c for c in commands if "rev-list" in c]
@@ -77,7 +118,9 @@ class TestCmdUpdateBranchFallback:
 
         cmd_update(mock_args)
 
-        commands = [" ".join(str(a) for a in c.args[0]) for c in mock_run.call_args_list]
+        commands = [
+            " ".join(str(a) for a in c.args[0]) for c in mock_run.call_args_list
+        ]
 
         rev_list_cmds = [c for c in commands if "rev-list" in c]
         assert len(rev_list_cmds) == 1
@@ -89,9 +132,7 @@ class TestCmdUpdateBranchFallback:
 
     @patch("shutil.which", return_value=None)
     @patch("subprocess.run")
-    def test_update_already_up_to_date(
-        self, mock_run, _mock_which, mock_args, capsys
-    ):
+    def test_update_already_up_to_date(self, mock_run, _mock_which, mock_args, capsys):
         mock_run.side_effect = _make_run_side_effect(
             branch="main", verify_ok=True, commit_count="0"
         )
@@ -102,7 +143,9 @@ class TestCmdUpdateBranchFallback:
         assert "Already up to date!" in captured.out
 
         # Should NOT have called pull
-        commands = [" ".join(str(a) for a in c.args[0]) for c in mock_run.call_args_list]
+        commands = [
+            " ".join(str(a) for a in c.args[0]) for c in mock_run.call_args_list
+        ]
         pull_cmds = [c for c in commands if "pull" in c]
         assert len(pull_cmds) == 0
 
@@ -143,14 +186,17 @@ class TestCmdUpdateBranchFallback:
             "--no-audit",
             "--progress=false",
         ]
+        # Read PROJECT_ROOT dynamically: the autouse fake_git_checkout fixture
+        # repoints hermes_cli.main.PROJECT_ROOT at the temp checkout.
+        project_root = hm.PROJECT_ROOT
         assert npm_calls[:2] == [
-            (update_flags, PROJECT_ROOT),
-            (update_flags, PROJECT_ROOT / "ui-tui"),
+            (update_flags, project_root),
+            (update_flags, project_root / "ui-tui"),
         ]
         if len(npm_calls) > 2:
             assert npm_calls[2:] == [
-                (["/usr/bin/npm", "ci", "--silent"], PROJECT_ROOT / "web"),
-                (["/usr/bin/npm", "run", "build"], PROJECT_ROOT / "web"),
+                (["/usr/bin/npm", "ci", "--silent"], project_root / "web"),
+                (["/usr/bin/npm", "run", "build"], project_root / "web"),
             ]
 
         # Regression for #18840: repo root + ui-tui installs must stream
@@ -162,7 +208,7 @@ class TestCmdUpdateBranchFallback:
             if call.args
             and call.args[0][0] == "/usr/bin/npm"
             and call.args[0][1] == "ci"
-            and call.kwargs.get("cwd") in {PROJECT_ROOT, PROJECT_ROOT / "ui-tui"}
+            and call.kwargs.get("cwd") in {project_root, project_root / "ui-tui"}
         ]
         assert len(repo_and_tui_calls) == 2
         for call in repo_and_tui_calls:
@@ -171,19 +217,28 @@ class TestCmdUpdateBranchFallback:
                 "(no capture_output) so postinstall progress is visible"
             )
 
-    def test_update_non_interactive_runs_safe_config_migrations(self, mock_args, capsys):
+    def test_update_non_interactive_runs_safe_config_migrations(
+        self, mock_args, capsys
+    ):
         """Dashboard/web updates apply non-interactive migrations before restart."""
-        with patch("shutil.which", return_value=None), patch(
-            "subprocess.run"
-        ) as mock_run, patch("builtins.input") as mock_input, patch(
-            "hermes_cli.config.get_missing_env_vars", return_value=["MISSING_KEY"]
-        ), patch(
-            "hermes_cli.config.get_missing_config_fields",
-            return_value=[{"key": "new.option", "default": True}],
-        ), patch("hermes_cli.config.check_config_version", return_value=(1, 2)), patch(
-            "hermes_cli.config.migrate_config",
-            return_value={"env_added": [], "config_added": ["new.option"]},
-        ), patch("hermes_cli.main.sys") as mock_sys:
+        with (
+            patch("shutil.which", return_value=None),
+            patch("subprocess.run") as mock_run,
+            patch("builtins.input") as mock_input,
+            patch(
+                "hermes_cli.config.get_missing_env_vars", return_value=["MISSING_KEY"]
+            ),
+            patch(
+                "hermes_cli.config.get_missing_config_fields",
+                return_value=[{"key": "new.option", "default": True}],
+            ),
+            patch("hermes_cli.config.check_config_version", return_value=(1, 2)),
+            patch(
+                "hermes_cli.config.migrate_config",
+                return_value={"env_added": [], "config_added": ["new.option"]},
+            ),
+            patch("hermes_cli.main.sys") as mock_sys,
+        ):
             mock_sys.stdin.isatty.return_value = False
             mock_sys.stdout.isatty.return_value = False
             mock_run.side_effect = _make_run_side_effect(

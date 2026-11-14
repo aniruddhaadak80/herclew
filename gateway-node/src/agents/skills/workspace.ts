@@ -892,10 +892,9 @@ function loadSkillEntries(
     dir: projectAgentsSkillsDir,
     source: "agents-skills-project",
   });
-  const workspaceSkills = loadSkills({
-    dir: workspaceSkillsDir,
-    source: "openclaw-workspace",
-  });
+  const workspaceSkills = [workspaceSkillsDir, workspaceDir].flatMap((dir) =>
+    loadSkills({ dir, source: "openclaw-workspace" }),
+  );
 
   const merged = new Map<string, LoadedSkillRecord>();
   // Precedence: extra < bundled < managed < agents-skills-personal < agents-skills-project < workspace

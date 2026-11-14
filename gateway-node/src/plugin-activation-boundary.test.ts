@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import { normalizeModelRef } from "./agents/model-selection-normalize.js";
-import { isStaticallyChannelConfigured } from "./config/channel-configured-shared.js";
 import { parseBrowserMajorVersion } from "./plugin-sdk/browser-host-inspection.js";
 
 const loadBundledPluginPublicSurfaceModuleSync = vi.hoisted(() =>
@@ -120,8 +119,17 @@ vi.mock("./plugin-sdk/facade-runtime.js", () => ({
 }));
 
 describe("plugin activation boundary", () => {
-  it("keeps generic boundaries cold and loads only narrow browser helper surfaces on use", () => {
+  it("keeps generic boundaries cold and loads only narrow browser helper surfaces on use", async () => {
     loadBundledPluginPublicSurfaceModuleSync.mockReset();
+
+    // The gateway suite runs these projects without module isolation, so
+    // `channel-configured-shared` can already be cached (with the real
+    // channel env lookup) by an earlier spec. Re-import it after resetting
+    // the module registry so the mocked env lookup below is the one in use.
+    vi.resetModules();
+    const { isStaticallyChannelConfigured } = await import(
+      "./config/channel-configured-shared.js"
+    );
 
     expect(isStaticallyChannelConfigured({}, "telegram", { TELEGRAM_BOT_TOKEN: "token" })).toBe(
       true,

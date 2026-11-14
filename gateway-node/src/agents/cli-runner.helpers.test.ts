@@ -228,7 +228,7 @@ describe("writeCliImages", () => {
       expect(first.paths).toStrictEqual([
         expect.stringMatching(
           new RegExp(
-            `^${escapeRegExp(`${resolvePreferredOpenClawTmpDir()}/openclaw-cli-images/`)}.*\\.png$`,
+            `^${escapeRegExp(path.join(resolvePreferredOpenClawTmpDir(), "openclaw-cli-images"))}.*\\.png$`,
           ),
         ),
       ]);

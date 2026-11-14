@@ -232,8 +232,14 @@ async function createVm(params: {
   config: CodeModeConfig;
   pendingRequests: PendingBridgeRequest[];
 }): Promise<VmRun> {
-  const startedAt = Date.now();
+  // The timeout budget belongs to the guest program, not to VM bootstrap:
+  // creating the VM and evaluating the controller can take longer than the
+  // configured timeout on a loaded machine, and an interrupt raised during
+  // bootstrap escapes the guest try/catch as a bare "interrupted" error.
+  // Until bootstrap finishes the deadline is unreachable, so the interrupt
+  // handler never fires; the host watchdog bounds the bootstrap itself.
   let timedOut = false;
+  let startedAt = Number.POSITIVE_INFINITY;
   const vm = await QuickJS.create({
     memoryLimit: params.config.memoryLimitBytes,
     intrinsics: Intrinsics.ALL,
@@ -263,6 +269,7 @@ async function createVm(params: {
     hostRequest.dispose();
   }
   vm.evalCode(CONTROLLER_SOURCE, "openclaw-code-mode:controller.js").dispose();
+  startedAt = Date.now();
   return { vm, didTimeout: () => timedOut };
 }
 
@@ -271,8 +278,9 @@ async function restoreVm(params: {
   config: CodeModeConfig;
   pendingRequests: PendingBridgeRequest[];
 }): Promise<VmRun> {
-  const startedAt = Date.now();
+  // Same rule as createVm: the timeout budget starts with the guest program.
   let timedOut = false;
+  let startedAt = Number.POSITIVE_INFINITY;
   const snapshot = QuickJS.deserializeSnapshot(params.snapshotBytes);
   const vm = await QuickJS.restore(snapshot, {
     memoryLimit: params.config.memoryLimitBytes,
@@ -291,6 +299,7 @@ async function restoreVm(params: {
       config: params.config,
     }),
   );
+  startedAt = Date.now();
   return { vm, didTimeout: () => timedOut };
 }
 

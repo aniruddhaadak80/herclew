@@ -75,7 +75,9 @@ class _FakeSandbox:
     def refresh(self) -> None:
         self.refresh_calls += 1
 
-    def wait_for_status(self, status: _FakeSandboxStatus | str, *, timeout, poll_interval) -> None:
+    def wait_for_status(
+        self, status: _FakeSandboxStatus | str, *, timeout, poll_interval
+    ) -> None:
         self.wait_for_status_calls.append((status, timeout, poll_interval))
         if self.wait_for_status_side_effects:
             effect = self.wait_for_status_side_effects.pop(0)
@@ -290,8 +292,12 @@ class TestFileSync:
                 }
             ],
         )
-        monkeypatch.setattr("tools.credential_files.iter_skills_files", lambda **kwargs: [])
-        monkeypatch.setattr("tools.credential_files.iter_cache_files", lambda **kwargs: [])
+        monkeypatch.setattr(
+            "tools.credential_files.iter_skills_files", lambda **kwargs: []
+        )
+        monkeypatch.setattr(
+            "tools.credential_files.iter_cache_files", lambda **kwargs: []
+        )
 
         make_env()
 
@@ -317,8 +323,12 @@ class TestFileSync:
                 }
             ],
         )
-        monkeypatch.setattr("tools.credential_files.iter_skills_files", lambda **kwargs: [])
-        monkeypatch.setattr("tools.credential_files.iter_cache_files", lambda **kwargs: [])
+        monkeypatch.setattr(
+            "tools.credential_files.iter_skills_files", lambda **kwargs: []
+        )
+        monkeypatch.setattr(
+            "tools.credential_files.iter_cache_files", lambda **kwargs: []
+        )
 
         env = make_env()
         src.write_text("updated-secret-token")
@@ -362,13 +372,11 @@ class TestFileSync:
         env = make_env()
         sandbox = vercel_sdk.current
         sandbox.snapshot_id = "snap_cleanup"
-        vercel_sdk.current.download_file_content = _tar_bytes(
-            {
-                "home/vercel/.hermes/credentials/token.txt": b"remote-token",
-                "home/vercel/.hermes/credentials/new.txt": b"new-remote",
-                "home/vercel/.hermes/unmapped/skip.txt": b"skip",
-            }
-        )
+        vercel_sdk.current.download_file_content = _tar_bytes({
+            "home/vercel/.hermes/credentials/token.txt": b"remote-token",
+            "home/vercel/.hermes/credentials/new.txt": b"new-remote",
+            "home/vercel/.hermes/unmapped/skip.txt": b"skip",
+        })
 
         env.cleanup()
         env.cleanup()
@@ -377,13 +385,22 @@ class TestFileSync:
         assert (tmp_path / "new.txt").read_text() == "new-remote"
         assert not (tmp_path / "skip.txt").exists()
         assert len(sandbox.snapshot_calls) == 1
-        assert len(sandbox.stop_calls) == 1  # always stop after snapshot to avoid resource leaks
+        assert (
+            len(sandbox.stop_calls) == 1
+        )  # always stop after snapshot to avoid resource leaks
         assert sandbox.closed == 1
         assert vercel_module._load_snapshots() == {"task-123": "snap_cleanup"}
 
     def test_cleanup_sync_back_failure_from_download_does_not_block_snapshot(
         self, make_env, vercel_sdk, monkeypatch, tmp_path
     ):
+        # Private hermes home like every other test here: the sync-back lock
+        # lives at <hermes_home>/.sync.lock, and against the shared default
+        # (~/.hermes) this test's blocking flock can contend with another
+        # xdist worker and blow the 30s budget -> pytest-timeout kills the
+        # whole worker ("node down" + this test reported failed).
+        hermes_home = tmp_path / ".hermes"
+        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
         src = tmp_path / "token.txt"
         src.write_text("host-token")
         monkeypatch.setattr(
@@ -405,17 +422,21 @@ class TestFileSync:
         )
         env = make_env()
         sandbox = vercel_sdk.current
-        sandbox.run_command_side_effects.extend(
-            [
-                _FakeRunResult("tar failed", exit_code=2),
-                _FakeRunResult(""),
-                _FakeRunResult("tar failed", exit_code=2),
-                _FakeRunResult(""),
-                _FakeRunResult("tar failed", exit_code=2),
-                _FakeRunResult(""),
-            ]
-        )
-        monkeypatch.setattr("tools.environments.file_sync.time.sleep", lambda _delay: None)
+        sandbox.run_command_side_effects.extend([
+            _FakeRunResult("tar failed", exit_code=2),
+            _FakeRunResult(""),
+            _FakeRunResult("tar failed", exit_code=2),
+            _FakeRunResult(""),
+            _FakeRunResult("tar failed", exit_code=2),
+            _FakeRunResult(""),
+        ])
+        # Patch the module-level alias file_sync actually calls
+        # (``_sleep = time.sleep`` at import time). Patching
+        # ``file_sync.time.sleep`` rebinds the global time module attribute
+        # but leaves the ``_sleep`` alias pointing at the ORIGINAL function,
+        # so the (2, 4, 8)s retry backoff really slept and this test overran
+        # its 30s timeout on CI -> pytest-timeout killed the worker.
+        monkeypatch.setattr("tools.environments.file_sync._sleep", lambda _delay: None)
 
         env.cleanup()
 
@@ -426,14 +447,11 @@ class TestFileSync:
 
 
 class TestExecute:
-
     @pytest.mark.parametrize(
         ("make_unhealthy", "label"),
         [
             (
-                lambda sandbox: setattr(
-                    sandbox, "status", _FakeSandboxStatus.STOPPED
-                ),
+                lambda sandbox: setattr(sandbox, "status", _FakeSandboxStatus.STOPPED),
                 "terminal state",
             ),
             (
@@ -455,12 +473,10 @@ class TestExecute:
         make_unhealthy(original)
 
         replacement = _FakeSandbox()
-        replacement.run_command_side_effects.extend(
-            [
-                _FakeRunResult(replacement.home),
-                _cwd_result("hello"),
-            ]
-        )
+        replacement.run_command_side_effects.extend([
+            _FakeRunResult(replacement.home),
+            _cwd_result("hello"),
+        ])
         vercel_sdk.create_side_effects.append(replacement)
 
         result = env.execute("echo hello")
@@ -469,9 +485,7 @@ class TestExecute:
         assert original.closed == 1
         assert vercel_sdk.current is replacement
 
-    def test_run_bash_handle_uses_captured_sandbox_for_exec_and_cancel(
-        self, make_env
-    ):
+    def test_run_bash_handle_uses_captured_sandbox_for_exec_and_cancel(self, make_env):
         env = make_env()
         original = env._sandbox
         assert original is not None
@@ -528,9 +542,7 @@ class TestSnapshotPersistence:
         monkeypatch.setenv("HERMES_HOME", str(hermes_home))
         vercel_module._store_snapshot("task-123", "snap_stale")
         fresh = _FakeSandbox(cwd="/fresh")
-        vercel_sdk.create_side_effects.extend(
-            [RuntimeError("snapshot missing"), fresh]
-        )
+        vercel_sdk.create_side_effects.extend([RuntimeError("snapshot missing"), fresh])
 
         env = make_env()
 

@@ -5,9 +5,17 @@
   "description": "Registers the Herclew Python reasoning core as a CLI backend.",
   "version": "1.0.0",
   "main": "./index.ts",
+  "activation": {
+    "onStartup": false
+  },
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
-    "properties": {}
+    "properties": {
+      "enabled": {
+        "type": "boolean",
+        "description": "Enable the Herclew CLI backend."
+      }
+    }
   }
 }

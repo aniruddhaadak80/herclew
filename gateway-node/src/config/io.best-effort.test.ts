@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
-import { describe, expect, it } from "vitest";
+import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   readBestEffortConfig,
   readConfigFileSnapshot,
@@ -8,6 +9,19 @@ import {
 import { withTempHome, writeOpenClawConfig } from "./test-helpers.js";
 
 describe("readBestEffortConfig", () => {
+  beforeEach(() => {
+    // Load-time provider defaults (e.g. cache-ttl pruning) come from bundled
+    // provider metadata; point discovery at the repo extensions so the
+    // anthropic provider resolves in the temp-home sandbox.
+    vi.stubEnv(
+      "OPENCLAW_BUNDLED_PLUGINS_DIR",
+      path.resolve(import.meta.dirname, "../../extensions"),
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
   it("can read snapshots without updating config observation state", async () => {
     await withTempHome(async (home) => {
       await writeOpenClawConfig(home, {

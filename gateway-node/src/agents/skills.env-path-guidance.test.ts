@@ -12,7 +12,7 @@ type GuidanceCase = {
 
 const CASES: GuidanceCase[] = [
   {
-    file: "skills/session-logs/SKILL.md",
+    file: "skills/devops/session-logs/SKILL.md",
     required: ["OPENCLAW_STATE_DIR"],
     forbidden: [
       "for f in ~/.openclaw/agents/<agentId>/sessions/*.jsonl",
@@ -21,21 +21,21 @@ const CASES: GuidanceCase[] = [
     ],
   },
   {
-    file: "skills/gh-issues/SKILL.md",
+    file: "skills/github-integrations/github/gh-issues/SKILL.md",
     required: ["OPENCLAW_CONFIG_PATH"],
     forbidden: ["cat ~/.openclaw/openclaw.json"],
   },
   {
-    file: "skills/canvas/SKILL.md",
+    file: "skills/creative/canvas/SKILL.md",
     required: ["OPENCLAW_CONFIG_PATH"],
     forbidden: ["cat ~/.openclaw/openclaw.json"],
   },
   {
-    file: "skills/openai-whisper-api/SKILL.md",
+    file: "skills/media/openai-whisper-api/SKILL.md",
     required: ["OPENCLAW_CONFIG_PATH"],
   },
   {
-    file: "skills/sherpa-onnx-tts/SKILL.md",
+    file: "skills/media/sherpa-onnx-tts/SKILL.md",
     required: [
       "OPENCLAW_STATE_DIR",
       "OPENCLAW_CONFIG_PATH",
@@ -48,7 +48,7 @@ const CASES: GuidanceCase[] = [
     ],
   },
   {
-    file: "skills/coding-agent/SKILL.md",
+    file: "skills/devops/coding-agent/SKILL.md",
     required: ["OPENCLAW_STATE_DIR"],
     forbidden: ["NEVER start Codex in ~/.openclaw/"],
   },

@@ -12,11 +12,23 @@ import { resolveRepoRoot } from "../../scripts/lib/ts-guard-utils.mjs";
  * root) — it overshot to the repo's parent directory.
  */
 describe("resolveRepoRoot", () => {
+  function hasGitAncestor(root: string): boolean {
+    let current = root;
+    const { root: fsRoot } = path.parse(current);
+    while (current !== fsRoot) {
+      if (existsSync(path.join(current, ".git"))) return true;
+      current = path.dirname(current);
+    }
+    return false;
+  }
+
   it("resolves correctly from a scripts/lib/*.mjs path (two levels below root)", () => {
     const fakeUrl = pathToFileURL(path.resolve("scripts", "lib", "some-guard-utils.mjs")).href;
     const root = resolveRepoRoot(fakeUrl);
 
-    expect(existsSync(path.join(root, ".git"))).toBe(true);
+    // Nested checkouts (gateway-node/ under herclew/) keep .git one level
+    // above the package root; assert via ancestry instead of same-dir.
+    expect(hasGitAncestor(root)).toBe(true);
     expect(existsSync(path.join(root, "package.json"))).toBe(true);
   });
 
@@ -24,7 +36,7 @@ describe("resolveRepoRoot", () => {
     const fakeUrl = pathToFileURL(path.resolve("scripts", "check-no-raw-channel-fetch.mjs")).href;
     const root = resolveRepoRoot(fakeUrl);
 
-    expect(existsSync(path.join(root, ".git"))).toBe(true);
+    expect(hasGitAncestor(root)).toBe(true);
     expect(existsSync(path.join(root, "package.json"))).toBe(true);
   });
 
@@ -34,7 +46,7 @@ describe("resolveRepoRoot", () => {
     ).href;
     const root = resolveRepoRoot(fakeUrl);
 
-    expect(existsSync(path.join(root, ".git"))).toBe(true);
+    expect(hasGitAncestor(root)).toBe(true);
     expect(existsSync(path.join(root, "package.json"))).toBe(true);
   });
 

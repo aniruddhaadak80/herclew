@@ -12,10 +12,10 @@
   },
   "dependencies": {
     "@pierre/diffs": "1.2.1",
-    "@pierre/theme": "1.0.3",
+    "@pierre/theme": "2.0.0",
     "playwright-core": "1.60.0",
     "typebox": "1.1.38",
-    "zod": "4.6.6"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@openclaw/plugin-sdk": "workspace:*"

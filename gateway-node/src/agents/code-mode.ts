@@ -483,12 +483,23 @@ async function runBridgeRequest(params: {
 }
 
 function resolveCodeModeWorkerUrl(currentModuleUrl: string): URL {
-  const currentPath = fileURLToPath(currentModuleUrl);
-  const distMarker = `${path.sep}dist${path.sep}`;
-  const distIndex = currentPath.lastIndexOf(distMarker);
-  if (distIndex >= 0) {
-    const distRoot = currentPath.slice(0, distIndex + distMarker.length - 1);
-    return pathToFileURL(path.join(distRoot, "agents", "code-mode.worker.js"));
+  let currentPath: string;
+  try {
+    currentPath = fileURLToPath(currentModuleUrl);
+  } catch {
+    // fileURLToPath rejects POSIX-style file URLs (file:///repo/...) on
+    // Windows; fall back to the raw URL pathname for those inputs.
+    currentPath = new URL(currentModuleUrl).pathname;
+  }
+  // Accept both separator styles: currentPath may be a Windows backslash
+  // path while the caller passes POSIX-style file URLs (tests, packaged
+  // metadata recorded with / separators).
+  const toSlash = (value: string) => value.replace(/\\/gu, "/");
+  const slashPath = toSlash(currentPath);
+  if (slashPath.lastIndexOf("/dist/") >= 0) {
+    const urlDistIndex = toSlash(currentModuleUrl).lastIndexOf("/dist/");
+    const distRoot = toSlash(currentModuleUrl).slice(0, urlDistIndex + "/dist".length);
+    return new URL(`${distRoot}/agents/code-mode.worker.js`);
   }
   const extension = path.extname(currentPath) || ".js";
   return new URL(`./code-mode.worker${extension}`, currentModuleUrl);
@@ -505,6 +516,9 @@ async function runCodeModeWorker(
   const worker = new Worker(codeModeWorkerUrl(), {
     workerData,
   });
+  // Floor the host-side watchdog so slow worker/VM startup on loaded
+  // machines does not kill runs before the guest even starts executing.
+  const boundedTimeoutMs = Math.max(timeoutMs, 5000);
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await new Promise<CodeModeWorkerResult>((resolve) => {
@@ -524,7 +538,7 @@ async function runCodeModeWorker(
           code: "internal_error",
           output: [],
         });
-      }, timeoutMs);
+      }, boundedTimeoutMs);
       worker.once("message", (message: unknown) => {
         void worker.terminate();
         finish(

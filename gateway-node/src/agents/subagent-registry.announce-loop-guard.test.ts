@@ -1,4 +1,5 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
+import { createSubagentRegistryLifecycleController } from "./subagent-registry-lifecycle.js";
 import type { SubagentRunRecord } from "./subagent-registry.types.js";
 
 /**
@@ -227,41 +228,60 @@ describe("announce loop guard (#18264)", () => {
   });
 
   test("announce rejection resets cleanupHandled so retries can resume", async () => {
-    mocks.runSubagentAnnounceFlow.mockReset();
-    mocks.runSubagentAnnounceFlow.mockRejectedValueOnce(new Error("announce failed"));
-    registry.resetSubagentRegistryForTests();
-
+    // Drive the cleanup flow through the lifecycle controller directly.
+    // Going through initSubagentRegistry() makes the spec depend on the
+    // shared restore state, and the gateway projects run without module
+    // isolation, so which spec restores and resumes a run is not
+    // deterministic there. The retry timer also fires inside any poll
+    // window that advances the fake clock, which is what made the registry
+    // level version of this spec flap between "cleanupHandled stayed true"
+    // and "announceRetryCount was 2 instead of 1".
     const now = Date.now();
     const runId = "test-announce-rejection";
-    mocks.loadSubagentRegistryFromDisk.mockReturnValue(
-      new Map([
-        [
-          runId,
-          {
-            runId,
-            childSessionKey: "agent:main:subagent:child-1",
-            requesterSessionKey: "agent:main:main",
-            requesterDisplayKey: "agent:main:main",
-            task: "rejection test",
-            cleanup: "keep" as const,
-            createdAt: now - 30_000,
-            startedAt: now - 20_000,
-            endedAt: now - 10_000,
-            cleanupHandled: false,
-          },
-        ],
-      ]),
-    );
+    const entry: SubagentRunRecord = {
+      runId,
+      childSessionKey: "agent:main:subagent:child-1",
+      requesterSessionKey: "agent:main:main",
+      requesterDisplayKey: "agent:main:main",
+      task: "rejection test",
+      cleanup: "keep",
+      createdAt: now - 30_000,
+      startedAt: now - 20_000,
+      endedAt: now - 10_000,
+      cleanupHandled: false,
+    };
+    const runs = new Map<string, SubagentRunRecord>([[runId, entry]]);
+    const announceFlow = vi.fn(async () => {
+      throw new Error("announce failed");
+    });
+    const controller = createSubagentRegistryLifecycleController({
+      runs,
+      resumedRuns: new Set<string>(),
+      subagentAnnounceTimeoutMs: 1_000,
+      persist: vi.fn(),
+      clearPendingLifecycleError: vi.fn(),
+      countPendingDescendantRuns: () => 0,
+      suppressAnnounceForSteerRestart: () => false,
+      shouldEmitEndedHookForRun: () => false,
+      emitSubagentEndedHookForRun: vi.fn(async () => {}),
+      notifyContextEngineSubagentEnded: vi.fn(async () => {}),
+      resumeSubagentRun: vi.fn(),
+      callGateway: mocks.callGateway as never,
+      captureSubagentCompletionReply: mocks.captureSubagentCompletionReply as never,
+      runSubagentAnnounceFlow: announceFlow as never,
+      warn: vi.fn(),
+    });
 
-    registry.initSubagentRegistry();
-    await Promise.resolve();
-    await Promise.resolve();
+    expect(controller.startSubagentAnnounceCleanupFlow(runId, entry)).toBe(true);
+    // The rejected announce is handled on the microtask queue.
+    await vi.advanceTimersByTimeAsync(0);
 
-    const runs = registry.listSubagentRunsForRequester("agent:main:main");
-    const stored = runs.find((run) => run.runId === runId);
-    expect(stored?.cleanupHandled).toBe(false);
-    expect(stored?.cleanupCompletedAt).toBeUndefined();
-    expect(stored?.announceRetryCount).toBe(1);
-    expect(stored?.lastAnnounceRetryAt).toBeTypeOf("number");
+    expect(announceFlow).toHaveBeenCalledTimes(1);
+    // The rejection must clear the cleanup marker so a later retry can pick
+    // the run up again, and it must not complete the cleanup.
+    expect(entry.cleanupHandled).toBe(false);
+    expect(entry.cleanupCompletedAt).toBeUndefined();
+    expect(entry.announceRetryCount).toBe(1);
+    expect(entry.lastAnnounceRetryAt).toBeTypeOf("number");
   });
 });

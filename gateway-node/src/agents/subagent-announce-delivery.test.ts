@@ -1414,7 +1414,12 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
     expect(sendMessage).not.toHaveBeenCalled();
   });
 
-  it("reports failure for Telegram DMs when announce-agent delivery fails", async () => {
+  // This case drives the full gateway retry backoff (minutes); vitest's
+  // default 120s ceiling cannot contain it.
+  it(
+    "reports failure for Telegram DMs when announce-agent delivery fails",
+    { timeout: 300_000 },
+    async () => {
     const callGateway = vi.fn(async () => {
       throw new Error("UNAVAILABLE: requester wake failed");
     }) as unknown as typeof runtimeCallGateway;
@@ -1444,7 +1449,8 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
       error: "UNAVAILABLE: requester wake failed",
     });
     expect(sendMessage).not.toHaveBeenCalled();
-  });
+  },
+  );
 
   it("falls back to requester-agent handoff when an active Telegram requester cannot be woken", async () => {
     const callGateway = createGatewayMock({
