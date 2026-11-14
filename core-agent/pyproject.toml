@@ -60,6 +60,9 @@ dependencies = [
   # (which is a silent killer on Windows — see CONTRIBUTING.md) and
   # `os.killpg` (which doesn't exist on Windows).
   "psutil==7.2.2",
+  # The gateway serves its HTTP API and the webhook adapters with aiohttp,
+  # so the test suite cannot even import the gateway package without it.
+  "aiohttp==3.14.4",
 ]
 
 [project.optional-dependencies]
