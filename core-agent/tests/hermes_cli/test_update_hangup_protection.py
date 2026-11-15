@@ -86,6 +86,7 @@ class TestUpdateOutputStream:
 
     def test_log_failure_does_not_abort_write(self):
         """Even if the log file write raises, the original write must still happen."""
+
         class _BrokenLog:
             def write(self, data):
                 raise OSError("disk full")
@@ -165,7 +166,9 @@ class TestInstallHangupProtection:
     def test_gateway_mode_is_noop(self):
         """In gateway mode the process is already detached — don't touch stdio or signals."""
         prev_out, prev_err = sys.stdout, sys.stderr
-        prev_sighup = signal.getsignal(signal.SIGHUP) if hasattr(signal, "SIGHUP") else None
+        prev_sighup = (
+            signal.getsignal(signal.SIGHUP) if hasattr(signal, "SIGHUP") else None
+        )
 
         state = _install_hangup_protection(gateway_mode=True)
 
@@ -187,6 +190,7 @@ class TestInstallHangupProtection:
         monkeypatch.setenv("HERMES_HOME", str(tmp_path))
         # Clear cached get_hermes_home if present
         import hermes_cli.config as _cfg
+
         if hasattr(_cfg, "_HERMES_HOME_CACHE"):
             _cfg._HERMES_HOME_CACHE = None  # type: ignore[attr-defined]
 
@@ -204,6 +208,7 @@ class TestInstallHangupProtection:
         monkeypatch.setenv("HERMES_HOME", str(tmp_path))
         # Nuke any cached home path
         import hermes_cli.config as _cfg
+
         if hasattr(_cfg, "_HERMES_HOME_CACHE"):
             _cfg._HERMES_HOME_CACHE = None  # type: ignore[attr-defined]
 
@@ -213,8 +218,11 @@ class TestInstallHangupProtection:
         try:
             # On Windows (no SIGHUP) we still wrap stdio and create the log.
             assert state["installed"] is True
-            assert isinstance(sys.stdout, _UpdateOutputStream)
-            assert isinstance(sys.stderr, _UpdateOutputStream)
+            # Compare by name: a sibling spec that wrapped stdout earlier can
+            # leave a stream built from another import of hermes_cli.main, and
+            # the class object is then a different one with the same name.
+            assert type(sys.stdout).__name__ == "_UpdateOutputStream"
+            assert type(sys.stderr).__name__ == "_UpdateOutputStream"
             assert state["log_file"] is not None
 
             sys.stdout.write("checking mirror\n")
@@ -234,6 +242,7 @@ class TestInstallHangupProtection:
     def test_logs_dir_created_if_missing(self, tmp_path, monkeypatch):
         monkeypatch.setenv("HERMES_HOME", str(tmp_path))
         import hermes_cli.config as _cfg
+
         if hasattr(_cfg, "_HERMES_HOME_CACHE"):
             _cfg._HERMES_HOME_CACHE = None  # type: ignore[attr-defined]
 
@@ -255,9 +264,7 @@ class TestInstallHangupProtection:
             raise RuntimeError("no home for you")
 
         # Patch the import inside _install_hangup_protection.
-        monkeypatch.setattr(
-            "hermes_cli.config.get_hermes_home", _boom, raising=True
-        )
+        monkeypatch.setattr("hermes_cli.config.get_hermes_home", _boom, raising=True)
 
         original_handler = (
             signal.getsignal(signal.SIGHUP) if hasattr(signal, "SIGHUP") else None
@@ -290,6 +297,7 @@ class TestFinalizeUpdateOutput:
     def test_restores_streams_and_closes_log(self, tmp_path, monkeypatch):
         monkeypatch.setenv("HERMES_HOME", str(tmp_path))
         import hermes_cli.config as _cfg
+
         if hasattr(_cfg, "_HERMES_HOME_CACHE"):
             _cfg._HERMES_HOME_CACHE = None  # type: ignore[attr-defined]
 
