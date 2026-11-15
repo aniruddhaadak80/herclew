@@ -11,6 +11,11 @@
 # fixtures fine everywhere. Keep 0.33.x pinned (root optionalDependencies and
 # gateway-node/extensions/media-understanding-core) until upstream publishes
 # fixed prebuilts. See PR #7 for the verification details.
+#
+# minimatch: 11 changes the pattern semantics the exec allowlist analysis
+# relies on. With 11 in the tree the chained-command allowlist specs in
+# gateway-node/src/infra/exec-approvals-*.test.ts report an allowlist as
+# unsatisfied, so keep the 10.x line until the analysis is updated.
 
 version: 2
 
@@ -22,6 +27,8 @@ updates:
     ignore:
       - dependency-name: sharp
         versions: [">=0.34"]
+      - dependency-name: minimatch
+        versions: [">=11"]
 
   - package-ecosystem: npm
     directory: /gateway-node/extensions/media-understanding-core
@@ -30,3 +37,11 @@ updates:
     ignore:
       - dependency-name: sharp
         versions: [">=0.34"]
+
+  - package-ecosystem: npm
+    directory: /gateway-node/extensions/file-transfer
+    schedule:
+      interval: weekly
+    ignore:
+      - dependency-name: minimatch
+        versions: [">=11"]
