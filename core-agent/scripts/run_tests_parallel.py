@@ -95,8 +95,10 @@ def run_one(path: Path) -> tuple[Path, int, float, str]:
         "0",  # override pyproject addopts' -n auto: no xdist inside the file
         "-q",
         "--tb=short",
-        "-p",
-        "no:cacheprovider",
+        # NOTE: no `-p no:cacheprovider` here - pytest's `-p <plugin>` collides
+        # with hermes's inherited `-p/--profile` flag, which relaunch.py
+        # extracts from sys.argv[1:] and forwards into the relaunched argv
+        # (broke tests/hermes_cli/test_relaunch.py under this runner).
     ]
     env = dict(os.environ)
     env["PYTHONHASHSEED"] = "0"
