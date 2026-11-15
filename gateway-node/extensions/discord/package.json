@@ -9,7 +9,7 @@
   "type": "module",
   "dependencies": {
     "@discordjs/voice": "0.19.2",
-    "discord-api-types": "0.38.47",
+    "discord-api-types": "0.38.58",
     "https-proxy-agent": "9.0.0",
     "opusscript": "0.1.1",
     "typebox": "1.1.38",
