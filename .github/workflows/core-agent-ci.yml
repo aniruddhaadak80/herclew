@@ -16,7 +16,10 @@ on:
 jobs:
   test:
     name: Lint & Test Python Core
-    runs-on: ubuntu-latest
+    # Pinned to the image both lanes were verified green on (ubuntu-latest
+    # flipped to 26.04 mid-Nov 2026; keep the Python lane on the audited
+    # baseline until the suite is re-verified on 26.04).
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: core-agent
