@@ -401,6 +401,14 @@ export function matchAllowlist(
   if (!trustPath) {
     return null;
   }
+  // Operators allowlist the path they invoke, which may be a symlink into a
+  // vendor directory (for example /usr/bin/echo on GitHub runners points into
+  // a coreutils toolchain dir). Accept either the invoked path or its real path.
+  const pathTargets = [trustPath];
+  const resolvedPath = resolution.resolvedPath?.trim();
+  if (resolvedPath && resolvedPath !== trustPath) {
+    pathTargets.push(resolvedPath);
+  }
   let pathOnlyMatch: ExecAllowlistEntry | null = null;
   for (const entry of entries) {
     const pattern = entry.pattern?.trim();
@@ -408,7 +416,7 @@ export function matchAllowlist(
       continue;
     }
     const patternMatches = hasPathSelector(pattern)
-      ? matchesExecAllowlistPattern(pattern, trustPath)
+      ? pathTargets.some((target) => matchesExecAllowlistPattern(pattern, target))
       : pattern !== "*" && matchesExecutableBasenamePattern(pattern, resolution);
     if (!patternMatches) {
       continue;
