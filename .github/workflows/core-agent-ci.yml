@@ -16,7 +16,10 @@ on:
 jobs:
   test:
     name: Lint & Test Python Core
-    runs-on: ubuntu-latest
+    # Pinned to the image both lanes were verified green on (ubuntu-latest
+    # flipped to 26.04 mid-Nov 2026; keep the Python lane on the audited
+    # baseline until the suite is re-verified on 26.04).
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: core-agent
@@ -51,8 +54,15 @@ jobs:
       - name: Run Ruff Lint
         run: uv run --frozen ruff check . --select PLW1514
 
-      # pytest options (testpaths, markers, -n auto, --timeout) all come from
-      # [tool.pytest.ini_options]; the old step pointed at tests/unit, which
-      # does not exist in this repository.
+      # Per-file subprocess isolation (the upstream hermes-agent design): each
+      # test file runs in its own freshly-spawned pytest process, driven by a
+      # bounded pool (scripts/run_tests_parallel.py). The previous single
+      # `uv run pytest` xdist pool kept ~12k tests per long-lived worker, and
+      # module-state leakage between files (bare sys.modules dels/pops splitting
+      # hermes_cli.main, leaked threads deadlocking session teardown, plugin
+      # singletons) made failures move around with the worker schedule.
       - name: Run Unit Tests
-        run: uv run --frozen pytest
+        run: uv run --frozen python scripts/run_tests_parallel.py
+        env:
+          CI_TEST_WORKERS: "4"
+          CI_TEST_FILE_TIMEOUT: "900"
