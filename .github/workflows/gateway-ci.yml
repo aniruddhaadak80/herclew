@@ -16,7 +16,13 @@ on:
 jobs:
   test:
     name: Build & Test Node Gateway
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest became Ubuntu 26.04 in the Nov 2026 migration
+    # (actions/runner-images#14748), whose coreutils install as symlinks. The
+    # exec allowlist matches absolute patterns against fs.realpathSync of the
+    # target (resolveExecutableTrustPath), so /usr/bin/echo and /usr/bin/head no
+    # longer match their own allowlist entries. Stay on 24.04 until allowlist
+    # matching handles symlinked system binaries. Core Agent CI is green on 26.04.
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: gateway-node
