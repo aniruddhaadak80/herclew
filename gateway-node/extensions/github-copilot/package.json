@@ -8,7 +8,7 @@
     "@clack/prompts": "1.4.0"
   },
   "devDependencies": {
-    "@earendil-works/pi-ai": "0.79.10",
+    "@earendil-works/pi-ai": "1.5.2",
     "@openclaw/plugin-sdk": "workspace:*"
   },
   "openclaw": {
