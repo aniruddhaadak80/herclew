@@ -22,6 +22,10 @@
 # gateway-node/src/agents/code-mode.test.ts fail (nested tool-call resume,
 # wait handling, output limits, hostile-loop termination). Keep the 2.x line
 # until Code Mode is ported.
+#
+# @vitest/coverage-v8: every release pins the exact vitest version it was built
+# for (5.1.0 requires vitest 5.1.0), so a coverage bump without the matching
+# vitest bump cannot work. Keep it on the vitest 4.x line.
 
 version: 2
 
@@ -37,6 +41,8 @@ updates:
         versions: [">=11"]
       - dependency-name: quickjs-wasi
         versions: [">=3"]
+      - dependency-name: "@vitest/coverage-v8"
+        versions: [">=5"]
 
   - package-ecosystem: npm
     directory: /gateway-node/extensions/media-understanding-core
