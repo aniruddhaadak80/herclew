@@ -4,6 +4,7 @@ import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 import { matchesExecAllowlistPattern } from "./exec-allowlist-pattern.js";
 import type { ExecAllowlistEntry } from "./exec-approvals.types.js";
 import { resolveExecWrapperTrustPlan } from "./exec-wrapper-trust-plan.js";
+import { isTrustedSafeBinPath } from "./exec-safe-bin-trust.js";
 import {
   resolveExecutablePath as resolveExecutableCandidatePath,
   resolveExecutablePathCandidate,
@@ -401,6 +402,16 @@ export function matchAllowlist(
   if (!trustPath) {
     return null;
   }
+  // Operators allowlist the path they invoke, which may be a distro symlink into
+  // a toolchain directory (for example /usr/bin/echo on GitHub's Ubuntu 26.04
+  // runners points into /usr/lib/cargo/bin/coreutils). Accept the invoked path
+  // as well when it lives in an OS-managed trusted directory; user-writable
+  // locations such as /opt/homebrew keep matching the real path only.
+  const pathTargets = [trustPath];
+  const resolvedPath = resolution.resolvedPath?.trim();
+  if (resolvedPath && resolvedPath !== trustPath && isTrustedSafeBinPath({ resolvedPath })) {
+    pathTargets.push(resolvedPath);
+  }
   let pathOnlyMatch: ExecAllowlistEntry | null = null;
   for (const entry of entries) {
     const pattern = entry.pattern?.trim();
@@ -408,7 +419,7 @@ export function matchAllowlist(
       continue;
     }
     const patternMatches = hasPathSelector(pattern)
-      ? matchesExecAllowlistPattern(pattern, trustPath)
+      ? pathTargets.some((target) => matchesExecAllowlistPattern(pattern, target))
       : pattern !== "*" && matchesExecutableBasenamePattern(pattern, resolution);
     if (!patternMatches) {
       continue;

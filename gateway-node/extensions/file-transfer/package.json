@@ -4,8 +4,13 @@
   "description": "OpenClaw file transfer plugin (file_fetch, dir_list, dir_fetch, file_write)",
   "type": "module",
   "dependencies": {
+<<<<<<< HEAD
     "minimatch": "10.2.5",
     "typebox": "1.4.7"
+=======
+    "minimatch": "10.2.6",
+    "typebox": "1.1.38"
+>>>>>>> origin/main
   },
   "devDependencies": {
     "@openclaw/plugin-sdk": "workspace:*"

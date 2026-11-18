@@ -75,6 +75,7 @@ function collectExecSafeBinScopes(cfg: OpenClawConfig): ExecSafeBinScopeRef[] {
           }) ?? {},
         trustedSafeBinDirs: getTrustedSafeBinDirs({
           extraDirs: globalTrustedDirs,
+          safeBins,
         }),
       });
     }
@@ -106,6 +107,7 @@ function collectExecSafeBinScopes(cfg: OpenClawConfig): ExecSafeBinScopeRef[] {
           ...globalTrustedDirs,
           ...normalizeConfiguredTrustedSafeBinDirs(agentExec.safeBinTrustedDirs),
         ],
+        safeBins,
       }),
     });
   }

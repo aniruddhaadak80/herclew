@@ -563,9 +563,8 @@ describe("exec approvals shell analysis", () => {
   describe("shell allowlist (chained commands)", () => {
     it.each([
       {
-        allowlist: [{ pattern: "/usr/bin/obsidian-cli" }, { pattern: "/usr/bin/head" }],
-        command:
-          "/usr/bin/obsidian-cli print-default && /usr/bin/obsidian-cli search foo | /usr/bin/head",
+        allowlist: [{ pattern: "/usr/bin/echo" }, { pattern: "/usr/bin/head" }],
+        command: "/usr/bin/echo print-default && /usr/bin/echo search foo | /usr/bin/head",
         expectedAnalysisOk: true,
         expectedAllowlistSatisfied: true,
       },

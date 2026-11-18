@@ -9,7 +9,7 @@
   "type": "module",
   "dependencies": {
     "@twurple/api": "8.1.4",
-    "@twurple/auth": "8.1.4",
+    "@twurple/auth": "8.2.0",
     "@twurple/chat": "8.1.4",
     "zod": "4.6.7"
   },

@@ -35,7 +35,7 @@ import {
   type SafeBinProfile,
   validateSafeBinArgv,
 } from "./exec-safe-bin-policy.js";
-import { isTrustedSafeBinPath } from "./exec-safe-bin-trust.js";
+import { getTrustedSafeBinDirs, isTrustedSafeBinPath } from "./exec-safe-bin-trust.js";
 import {
   extractBindableShellWrapperInlineCommand,
   isShellWrapperExecutable,
@@ -103,10 +103,20 @@ export function isSafeBinUsage(params: {
     return false;
   }
   const isTrustedPath = params.isTrustedSafeBinPathFn ?? isTrustedSafeBinPath;
+  // Include the resolved targets of the configured safe bins: distro toolchains
+  // (for example GitHub's runners, where /usr/bin/echo symlinks into
+  // /usr/lib/cargo/bin/coreutils) keep the binary in a trusted directory while
+  // its real path lives elsewhere. The trust model for the invoked path is
+  // unchanged, and the extra targets are derived from the same trusted dirs.
+  const trustedDirs =
+    params.trustedSafeBinDirs ??
+    getTrustedSafeBinDirs({
+      safeBins: [...params.safeBins],
+    });
   if (
     !isTrustedPath({
       resolvedPath: trustPath,
-      trustedDirs: params.trustedSafeBinDirs,
+      trustedDirs,
     })
   ) {
     return false;
