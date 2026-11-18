@@ -35,6 +35,10 @@ updates:
         versions: [">=0.34"]
       - dependency-name: minimatch
         versions: [">=11"]
+      # Coverage 5.x requires vitest 5; the gateway is on vitest 4 and the
+      # coverage spec fails against the new provider.
+      - dependency-name: "@vitest/coverage-v8"
+        versions: [">=5"]
       - dependency-name: quickjs-wasi
         versions: [">=3"]
 
