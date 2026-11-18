@@ -16,6 +16,12 @@
 # relies on. With 11 in the tree the chained-command allowlist specs in
 # gateway-node/src/infra/exec-approvals-*.test.ts report an allowlist as
 # unsatisfied, so keep the 10.x line until the analysis is updated.
+#
+# quickjs-wasi: 3.x changes the WASM host bridge surface Code Mode's sandbox
+# depends on. With 3.6.4 installed, 13 specs in
+# gateway-node/src/agents/code-mode.test.ts fail (nested tool-call resume,
+# wait handling, output limits, hostile-loop termination). Keep the 2.x line
+# until Code Mode is ported.
 
 version: 2
 
@@ -29,6 +35,8 @@ updates:
         versions: [">=0.34"]
       - dependency-name: minimatch
         versions: [">=11"]
+      - dependency-name: quickjs-wasi
+        versions: [">=3"]
 
   - package-ecosystem: npm
     directory: /gateway-node/extensions/media-understanding-core
