@@ -45,8 +45,13 @@ updates:
         versions: [">=5"]
       - dependency-name: quickjs-wasi
         versions: [">=3"]
-      - dependency-name: "@vitest/coverage-v8"
-        versions: [">=5"]
+      # extensions/acpx carries a pnpm patch against 0.36.1
+      # (gateway-node/patches/@agentclientprotocol__claude-agent-acp@0.36.1.patch)
+      # that stops a turn from ending on the first session_state_changed "idle"
+      # before a result arrives. pnpm refuses to install when the patched
+      # version leaves the graph, so a bump needs the patch ported first.
+      - dependency-name: "@agentclientprotocol/claude-agent-acp"
+        versions: [">=0.37"]
 
   - package-ecosystem: npm
     directory: /gateway-node/extensions/media-understanding-core
