@@ -25,14 +25,15 @@ jobs:
         uses: actions/checkout@v4
 
       # packageManager in gateway-node/package.json pins pnpm 11.28.10 by
-      # full SHA. Let action-setup read that pin (don't also pass `version`,
-      # which makes it abort with "Multiple versions of pnpm specified").
+      # full SHA. Pass the bare version explicitly here: action-setup v4
+      # misparses the SHA suffix if `package_json_file` points at that file,
+      # and there is no root package.json for it to discover by default.
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
+          version: 11.28.10
           cache: true
           cache_dependency_path: gateway-node/pnpm-lock.yaml
-          package_json_file: gateway-node/package.json
           run_install: false
 
       # pnpm-lock.yaml is committed: CI installs exactly the reviewed tree
