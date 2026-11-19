@@ -31,7 +31,6 @@ gateway-node/extensions/canvas/src/host/a2ui/a2ui.bundle.js
 gateway-node/extensions/canvas/src/host/a2ui/.bundle.hash
 gateway-node/memory/
 .tsbuildinfo
-pnpm-lock.yaml
 
 # === Environment / Local configs ===
 .env
