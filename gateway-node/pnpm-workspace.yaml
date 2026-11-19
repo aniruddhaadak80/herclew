@@ -45,6 +45,8 @@ minimumReleaseAgeExclude:
   - "rolldown"
   - "sqlite-vec"
   - "sqlite-vec-*"
+  - tinypool
+  - "@vitest/browser"
 
 nodeLinker: hoisted
 blockExoticSubdeps: true
@@ -79,6 +81,8 @@ overrides:
   yauzl: 3.2.1
   protobufjs: 8.4.0
   uuid: 14.0.0
+  tinypool: 2.1.2
+  "@vitest/browser": 4.1.10
 
 allowBuilds:
   "@openclaw/fs-safe": true
