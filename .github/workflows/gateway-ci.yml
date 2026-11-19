@@ -24,12 +24,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # packageManager in gateway-node/package.json pins pnpm 11.28.10. Asking
-      # action-setup for 9 made every `pnpm` call fail the version check.
+      # packageManager in gateway-node/package.json pins pnpm 11.28.10 by
+      # full SHA. Let action-setup read that pin (don't also pass `version`,
+      # which makes it abort with "Multiple versions of pnpm specified").
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11.28.10
           cache: true
           cache_dependency_path: gateway-node/pnpm-lock.yaml
           package_json_file: gateway-node/package.json
