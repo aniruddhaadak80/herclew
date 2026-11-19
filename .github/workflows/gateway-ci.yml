@@ -31,6 +31,8 @@ jobs:
         with:
           version: 11.28.10
           cache: true
+          cache_dependency_path: gateway-node/pnpm-lock.yaml
+          package_json_file: gateway-node/package.json
           run_install: false
 
       # pnpm-lock.yaml is committed: CI installs exactly the reviewed tree
