@@ -1858,7 +1858,7 @@
   "engines": {
     "node": ">=22.19.0"
   },
-  "packageManager": "pnpm@11.28.10+sha512-ZyIW8G4VwQm4VHHUnT++0X5vA+rSWN8Iwr9bSlwzMh6/v1lHa86BMl762has4Kx4VI/Qv816UTaek5GCo91Q5A==",
+  "packageManager": "pnpm@11.28.10",
   "pnpm": {
     "overrides": {
       "tinypool": "2.1.2",
