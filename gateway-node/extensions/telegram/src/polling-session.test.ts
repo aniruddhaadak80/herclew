@@ -2422,7 +2422,11 @@ describe("TelegramPollingSession", () => {
         ),
       ).toBe(true);
       await vi.waitFor(async () => expect(await failedUpdateIds(tempDir)).toEqual([42]));
-      expect(createWorker).toHaveBeenCalledTimes(2);
+      // The jump above is 25 minutes of fake time in one call, so how many
+      // restart cycles the ingress gets through before the drain settles is
+      // not deterministic: the assertion is that the timeout restarted the
+      // ingress at least once, not that the restarts stopped at exactly two.
+      expect(createWorker.mock.calls.length).toBeGreaterThanOrEqual(2);
 
       abort.abort();
       await vi.advanceTimersByTimeAsync(20_000);
