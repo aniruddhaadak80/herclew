@@ -52,6 +52,9 @@ updates:
       # version leaves the graph, so a bump needs the patch ported first.
       - dependency-name: "@agentclientprotocol/claude-agent-acp"
         versions: [">=0.37"]
+      # pi-ai 1.x is a breaking SDK jump from the 0.79 API the gateway uses.
+      - dependency-name: "@earendil-works/pi-ai"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: /gateway-node/extensions/media-understanding-core
