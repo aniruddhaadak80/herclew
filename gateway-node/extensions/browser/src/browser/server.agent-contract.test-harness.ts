@@ -28,7 +28,11 @@ async function postStartWithRetry(params: {
   fetch: ReturnType<typeof getBrowserTestFetch>;
   url: string;
 }): Promise<void> {
-  const delaysMs = [0, 25, 50, 100, 200] as const;
+  // Under a fully loaded CI shard (12 parallel vitest projects, ~19.5k
+  // tests), binding the local control server can take well over 375ms. Keep
+  // the first attempt immediate but allow ~3s of exponential backoff so a
+  // slow bind doesn't flake the whole run with ECONNREFUSED.
+  const delaysMs = [0, 25, 50, 100, 200, 400, 800, 1600] as const;
   let lastError: unknown;
   for (const delayMs of delaysMs) {
     if (delayMs > 0) {
