@@ -1858,11 +1858,5 @@
   "engines": {
     "node": ">=22.19.0"
   },
-  "packageManager": "pnpm@11.28.10",
-  "pnpm": {
-    "overrides": {
-      "tinypool": "2.1.2",
-      "@vitest/browser": "4.1.10"
-    }
-  }
+  "packageManager": "pnpm@11.28.10"
 }
