@@ -1810,7 +1810,7 @@
     "tslog": "4.10.2",
     "typebox": "1.1.38",
     "typescript": "6.0.3",
-    "undici": "8.12.4",
+    "undici": "8.12.2",
     "web-push": "4.0.0",
     "web-tree-sitter": "0.26.9",
     "ws": "8.21.3",
