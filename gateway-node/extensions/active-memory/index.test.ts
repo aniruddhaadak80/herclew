@@ -2499,6 +2499,10 @@ describe("active-memory plugin", () => {
 
   it("returns partial transcript text when an aborted subagent rejects before the race timeout wins", async () => {
     testing.setMinimumTimeoutMsForTests(1);
+    // The 5ms default grace is a Promise.race timer; under a loaded CI shard
+    // it can win before the aborted subagent's partial data arrives, making
+    // this test flaky. This test has a 5s timeout, so a 100ms grace is safe.
+    testing.setTimeoutPartialDataGraceMsForTests(100);
     api.pluginConfig = {
       agents: ["main"],
       timeoutMs: 5_000,
@@ -2999,6 +3003,10 @@ describe("active-memory plugin", () => {
     const CONFIGURED_TIMEOUT_MS = 50;
     testing.setMinimumTimeoutMsForTests(1);
     testing.setSetupGraceTimeoutMsForTests(0);
+    // The partial search debug is recovered through the 5ms grace race;
+    // under CI load that timer can win and drop the debug line the test
+    // asserts on. No wall-clock budget is asserted here, so widen it.
+    testing.setTimeoutPartialDataGraceMsForTests(100);
     api.pluginConfig = {
       agents: ["main"],
       timeoutMs: CONFIGURED_TIMEOUT_MS,
