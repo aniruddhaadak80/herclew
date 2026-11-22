@@ -85,12 +85,11 @@ overrides:
   uuid: 14.0.0
   tinypool: 2.1.2
   "@vitest/browser": 4.1.10
-  "undici": 8.12.2
   "@azure/msal-node": 7.1.0
   # sharp is already pinned to the known-good 0.33.5 in package.json;
   # overriding it to 0.35.x reintroduces broken prebuilt libvips binaries.
   "@opentelemetry/propagator-jaeger": 2.9.0
-  "postcss": 8.5.18
+  "postcss": 8.5.32
   "js-yaml": 4.3.2
   "smol-toml": 1.7.1
   "markdown-it": 14.3.3
