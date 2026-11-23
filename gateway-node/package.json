@@ -1787,7 +1787,7 @@
     "chokidar": "5.0.0",
     "commander": "14.0.3",
     "croner": "11.0.1",
-    "dotenv": "17.4.2",
+    "dotenv": "18.0.10",
     "express": "5.2.1",
     "file-type": "22.0.1",
     "grammy": "1.46.0",
