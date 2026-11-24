@@ -93,7 +93,7 @@ function expectWizardFields(
 describe("OpenAI plugin manifest", () => {
   it("keeps runtime dependencies in the package manifest", () => {
     expect(packageJson.dependencies?.["@earendil-works/pi-ai"]).toBe("0.79.10");
-    expect(packageJson.dependencies?.ws).toBe("8.21.0");
+    expect(packageJson.dependencies?.ws).toBe("8.23.0");
   });
 
   it("keeps removed Codex CLI import auth choice as a deprecated browser-login alias", () => {
