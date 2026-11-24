@@ -25,12 +25,22 @@ _OPENCODE_GO_REQUIRED = {
 @patch.dict(os.environ, {"OPENCODE_GO_API_KEY": "test-key"}, clear=False)
 def test_opencode_go_appears_when_api_key_set():
     """opencode-go should appear in list_authenticated_providers when OPENCODE_GO_API_KEY is set."""
-    providers = list_authenticated_providers(current_provider="openrouter", max_models=50)
+    # Use a cap larger than the merged catalog (curated + live models.dev).
+    # models.dev entries are placed FIRST by _merge_with_models_dev, so a
+    # small display cap legitimately truncates the curated tail — that is a
+    # display concern, not a missing-catalog-entry bug. This test checks the
+    # curated floor exists in the catalog, so don't cap it at the picker's
+    # display size (and don't depend on how many models.dev returns today).
+    providers = list_authenticated_providers(
+        current_provider="openrouter", max_models=200
+    )
 
     # Find opencode-go in results
     opencode_go = next((p for p in providers if p["slug"] == "opencode-go"), None)
 
-    assert opencode_go is not None, "opencode-go should appear when OPENCODE_GO_API_KEY is set"
+    assert opencode_go is not None, (
+        "opencode-go should appear when OPENCODE_GO_API_KEY is set"
+    )
     # Behavior check: the curated floor must be present. The list may also
     # include extra models.dev entries (e.g. mimo-v2.5-pro) when the registry
     # is reachable — that's the whole point of the models.dev-preferred merge
@@ -50,7 +60,9 @@ def test_opencode_go_appears_when_api_key_set():
 def test_opencode_go_not_appears_when_no_creds():
     """opencode-go should NOT appear when no credentials are set."""
     # Ensure OPENCODE_GO_API_KEY is not set
-    env_without_key = {k: v for k, v in os.environ.items() if k != "OPENCODE_GO_API_KEY"}
+    env_without_key = {
+        k: v for k, v in os.environ.items() if k != "OPENCODE_GO_API_KEY"
+    }
 
     with patch.dict(os.environ, env_without_key, clear=True):
         providers = list_authenticated_providers(current_provider="openrouter")
