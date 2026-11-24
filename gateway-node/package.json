@@ -1813,7 +1813,7 @@
     "undici": "8.12.2",
     "web-push": "4.0.0",
     "web-tree-sitter": "0.26.9",
-    "ws": "8.21.3",
+    "ws": "8.23.0",
     "yaml": "2.9.0",
     "zod": "4.6.7"
   },
@@ -1827,7 +1827,7 @@
     "@types/express": "5.0.6",
     "@types/markdown-it": "14.1.2",
     "@types/node": "25.9.1",
-    "@types/ws": "8.18.1",
+    "@types/ws": "8.18.2",
     "@typescript/native-preview": "7.0.0-dev.20260519.1",
     "@vitest/coverage-v8": "4.1.7",
     "jscpd": "4.2.3",

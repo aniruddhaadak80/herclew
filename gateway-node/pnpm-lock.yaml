@@ -65,13 +65,13 @@ importers:
         version: 1.4.0
       '@earendil-works/pi-agent-core':
         specifier: 0.79.10
-        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.3)(zod@4.6.7)
+        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
       '@earendil-works/pi-ai':
         specifier: 0.79.10
-        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.3)(zod@4.6.7)
+        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
       '@earendil-works/pi-coding-agent':
         specifier: 0.79.10
-        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.3)(zod@4.6.7)
+        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
       '@earendil-works/pi-tui':
         specifier: 0.79.10
         version: 0.79.10
@@ -155,7 +155,7 @@ importers:
         version: 1.2.10(supports-color@7.2.0)
       openai:
         specifier: 6.38.0
-        version: 6.38.0(ws@8.21.3)(zod@4.6.7)
+        version: 6.38.0(ws@8.23.0)(zod@4.6.7)
       pdfjs-dist:
         specifier: 6.2.108
         version: 6.2.108
@@ -196,8 +196,8 @@ importers:
         specifier: 0.26.9
         version: 0.26.9
       ws:
-        specifier: 8.21.3
-        version: 8.21.3
+        specifier: 8.23.0
+        version: 8.23.0
       yaml:
         specifier: 2.9.0
         version: 2.9.0
@@ -233,8 +233,8 @@ importers:
         specifier: 25.9.1
         version: 25.9.1
       '@types/ws':
-        specifier: 8.18.1
-        version: 8.18.1
+        specifier: 8.18.2
+        version: 8.18.2
       '@typescript/native-preview':
         specifier: 7.0.0-dev.20260519.1
         version: 7.0.0-dev.20260519.1
@@ -326,7 +326,7 @@ importers:
         version: 3.972.43
       '@earendil-works/pi-ai':
         specifier: 0.79.10
-        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.3)(zod@4.6.7)
+        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
       '@smithy/shared-ini-file-loader':
         specifier: 4.5.3
         version: 4.5.3
@@ -345,7 +345,7 @@ importers:
         version: 1.1.0
       '@earendil-works/pi-ai':
         specifier: 0.79.10
-        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.3)(zod@4.6.7)
+        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
     devDependencies:
       '@openclaw/plugin-sdk':
         specifier: workspace:*
@@ -355,7 +355,7 @@ importers:
     dependencies:
       '@earendil-works/pi-ai':
         specifier: 0.79.10
-        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.3)(zod@4.6.7)
+        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
     devDependencies:
       '@openclaw/plugin-sdk':
         specifier: workspace:*
@@ -368,10 +368,10 @@ importers:
         version: 0.16.1(supports-color@7.2.0)(zod@4.6.7)
       '@earendil-works/pi-agent-core':
         specifier: 0.79.10
-        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.3)(zod@4.6.7)
+        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
       '@earendil-works/pi-ai':
         specifier: 0.79.10
-        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.3)(zod@4.6.7)
+        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
     devDependencies:
       '@openclaw/plugin-sdk':
         specifier: workspace:*
@@ -423,8 +423,8 @@ importers:
         specifier: 1.1.38
         version: 1.1.38
       ws:
-        specifier: 8.21.0
-        version: 8.21.0
+        specifier: 8.23.0
+        version: 8.23.0
     devDependencies:
       '@openclaw/plugin-sdk':
         specifier: workspace:*
@@ -457,8 +457,8 @@ importers:
         specifier: 1.1.38
         version: 1.1.38
       ws:
-        specifier: 8.21.0
-        version: 8.21.0
+        specifier: 8.23.0
+        version: 8.23.0
     devDependencies:
       '@openclaw/plugin-sdk':
         specifier: workspace:*
@@ -479,8 +479,8 @@ importers:
   extensions/clickclack:
     dependencies:
       ws:
-        specifier: 8.21.0
-        version: 8.21.0
+        specifier: 8.23.0
+        version: 8.23.0
       zod:
         specifier: 4.6.7
         version: 4.6.7
@@ -502,7 +502,7 @@ importers:
     dependencies:
       '@earendil-works/pi-coding-agent':
         specifier: 0.79.10
-        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.0)(zod@4.6.7)
+        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
       '@openai/codex':
         specifier: 0.132.0
         version: 0.132.0
@@ -510,8 +510,8 @@ importers:
         specifier: 8.20.0
         version: 8.20.0
       ws:
-        specifier: 8.21.0
-        version: 8.21.0
+        specifier: 8.23.0
+        version: 8.23.0
       zod:
         specifier: 4.6.7
         version: 4.6.7
@@ -639,8 +639,8 @@ importers:
         specifier: 8.12.2
         version: 8.12.2
       ws:
-        specifier: 8.21.0
-        version: 8.21.0
+        specifier: 8.23.0
+        version: 8.23.0
     devDependencies:
       '@openclaw/plugin-sdk':
         specifier: workspace:*
@@ -732,7 +732,7 @@ importers:
     dependencies:
       '@earendil-works/pi-ai':
         specifier: 0.79.10
-        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.3)(zod@4.6.7)
+        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
     devDependencies:
       '@openclaw/plugin-sdk':
         specifier: workspace:*
@@ -746,7 +746,7 @@ importers:
     devDependencies:
       '@earendil-works/pi-ai':
         specifier: 0.79.10
-        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.3)(zod@4.6.7)
+        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
       '@openclaw/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
@@ -755,7 +755,7 @@ importers:
     dependencies:
       '@earendil-works/pi-ai':
         specifier: 0.79.10
-        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.3)(zod@4.6.7)
+        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
       '@google/genai':
         specifier: 2.5.0
         version: 2.5.0(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)
@@ -861,7 +861,7 @@ importers:
     dependencies:
       '@earendil-works/pi-ai':
         specifier: 0.79.10
-        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.3)(zod@4.6.7)
+        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
     devDependencies:
       '@openclaw/plugin-sdk':
         specifier: workspace:*
@@ -903,7 +903,7 @@ importers:
     dependencies:
       '@earendil-works/pi-ai':
         specifier: 0.79.10
-        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.3)(zod@4.6.7)
+        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
 
   extensions/lobster:
     dependencies:
@@ -958,8 +958,8 @@ importers:
   extensions/mattermost:
     dependencies:
       ws:
-        specifier: 8.21.0
-        version: 8.21.0
+        specifier: 8.23.0
+        version: 8.23.0
       zod:
         specifier: 4.6.7
         version: 4.6.7
@@ -1010,7 +1010,7 @@ importers:
         version: 18.1.0
       openai:
         specifier: 6.38.0
-        version: 6.38.0(ws@8.21.3)(zod@4.6.7)
+        version: 6.38.0(ws@8.23.0)(zod@4.6.7)
       typebox:
         specifier: 1.1.38
         version: 1.1.38
@@ -1189,7 +1189,7 @@ importers:
     dependencies:
       '@earendil-works/pi-ai':
         specifier: 0.79.10
-        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.3)(zod@4.6.7)
+        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
       typebox:
         specifier: 1.1.38
         version: 1.1.38
@@ -1208,10 +1208,10 @@ importers:
     dependencies:
       '@earendil-works/pi-ai':
         specifier: 0.79.10
-        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.0)(zod@4.6.7)
+        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
       ws:
-        specifier: 8.21.0
-        version: 8.21.0
+        specifier: 8.23.0
+        version: 8.23.0
     devDependencies:
       '@openclaw/plugin-sdk':
         specifier: workspace:*
@@ -1348,8 +1348,8 @@ importers:
         specifier: 3.7.1
         version: 3.7.1
       ws:
-        specifier: 8.21.0
-        version: 8.21.0
+        specifier: 8.23.0
+        version: 8.23.0
       zod:
         specifier: 4.6.7
         version: 4.6.7
@@ -1358,8 +1358,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
       '@types/ws':
-        specifier: 8.18.1
-        version: 8.18.1
+        specifier: 8.18.2
+        version: 8.18.2
       openclaw:
         specifier: workspace:*
         version: link:../..
@@ -1397,8 +1397,8 @@ importers:
   extensions/signal:
     dependencies:
       ws:
-        specifier: 8.21.0
-        version: 8.21.0
+        specifier: 8.23.0
+        version: 8.23.0
     devDependencies:
       '@openclaw/plugin-sdk':
         specifier: workspace:*
@@ -1607,8 +1607,8 @@ importers:
         specifier: 1.1.38
         version: 1.1.38
       ws:
-        specifier: 8.21.0
-        version: 8.21.0
+        specifier: 8.23.0
+        version: 8.23.0
       zod:
         specifier: 4.6.7
         version: 4.6.7
@@ -1690,7 +1690,7 @@ importers:
     dependencies:
       '@earendil-works/pi-ai':
         specifier: 0.79.10
-        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.0)(zod@4.6.7)
+        version: 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
       typebox:
         specifier: 1.1.38
         version: 1.1.38
@@ -1699,8 +1699,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
       ws:
-        specifier: 8.21.0
-        version: 8.21.0
+        specifier: 8.23.0
+        version: 8.23.0
 
   extensions/xiaomi:
     devDependencies:
@@ -4604,8 +4604,8 @@ packages:
   '@types/unist@3.0.3':
     resolution: {integrity: sha512-ko/gIFJRv177XgZsZcBwnqJN5x/Gien8qNOn0D5bQU/zAzVf9Zt3BlcUiLqhV9y4ARk0GbT3tnUiPNgnTXzc/Q==}
 
-  '@types/ws@8.18.1':
-    resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
+  '@types/ws@8.18.2':
+    resolution: {integrity: sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w==}
 
   '@typescript/native-preview-darwin-arm64@7.0.0-dev.20260519.1':
     resolution: {integrity: sha512-c9zdG6sGJf25Jpz04JgE23zhYeprqFypDGuqiX94yMTvR8IWXjq3R2oMnim66YLBDon/V1nCEy6cFixeSd/4fg==}
@@ -7801,20 +7801,8 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
-  ws@8.21.0:
-    resolution: {integrity: sha512-Vsp28b7DRcimFQvrqu2Wek3z1iYxDCWqHYB8Qsnk/S4RfaCQzPGPyBNuVjJV3cd6UiKtUtp6sNM77gWvzcCH+g==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: '>=5.0.2'
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
-
-  ws@8.21.3:
-    resolution: {integrity: sha512-201TZ/kPWxoPr/OKWjquZR1SWKXcvxdH+e1xrx89b3YbmzLMFCLfnaG1HFIgWzJOEWZ7MvpK++odZufgYR50Rw==}
+  ws@8.23.0:
+    resolution: {integrity: sha512-wCkmX8QMOrKjgO8HW2WyDbTSGeqkocxgDzS9iR79rEAexty6/2qzilx3Ag8Tqf9ykop3irLKle0MtVn5qjVnoQ==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -8625,14 +8613,14 @@ snapshots:
 
   '@d-fischer/connection@10.0.1':
     dependencies:
-      '@d-fischer/isomorphic-ws': 7.0.2(ws@8.21.3)
+      '@d-fischer/isomorphic-ws': 7.0.2(ws@8.23.0)
       '@d-fischer/logger': 4.2.4
       '@d-fischer/shared-utils': 3.6.4
       '@d-fischer/typed-event-emitter': 3.3.3
       '@types/node': 20.19.43
-      '@types/ws': 8.18.1
+      '@types/ws': 8.18.2
       tslib: 2.8.1
-      ws: 8.21.3
+      ws: 8.23.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -8643,9 +8631,9 @@ snapshots:
 
   '@d-fischer/escape-string-regexp@5.0.0': {}
 
-  '@d-fischer/isomorphic-ws@7.0.2(ws@8.21.3)':
+  '@d-fischer/isomorphic-ws@7.0.2(ws@8.23.0)':
     dependencies:
-      ws: 8.21.3
+      ws: 8.23.0
 
   '@d-fischer/logger@4.2.4':
     dependencies:
@@ -8670,11 +8658,11 @@ snapshots:
   '@discordjs/voice@0.19.2(@emnapi/core@2.0.0-beta.2)(@emnapi/runtime@2.0.0-beta.2)(opusscript@0.1.1)':
     dependencies:
       '@snazzah/davey': 0.1.12(@emnapi/core@2.0.0-beta.2)(@emnapi/runtime@2.0.0-beta.2)
-      '@types/ws': 8.18.1
+      '@types/ws': 8.18.2
       discord-api-types: 0.38.58
       prism-media: 1.3.5(opusscript@0.1.1)
       tslib: 2.8.1
-      ws: 8.21.0
+      ws: 8.23.0
     transitivePeerDependencies:
       - '@discordjs/opus'
       - '@emnapi/core'
@@ -8685,9 +8673,9 @@ snapshots:
       - opusscript
       - utf-8-validate
 
-  '@earendil-works/pi-agent-core@0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.0)(zod@4.6.7)':
+  '@earendil-works/pi-agent-core@0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)':
     dependencies:
-      '@earendil-works/pi-ai': 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.0)(zod@4.6.7)
+      '@earendil-works/pi-ai': 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
       ignore: 7.0.5
       typebox: 1.1.38
       yaml: 2.9.0
@@ -8699,21 +8687,7 @@ snapshots:
       - ws
       - zod
 
-  '@earendil-works/pi-agent-core@0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.3)(zod@4.6.7)':
-    dependencies:
-      '@earendil-works/pi-ai': 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.3)(zod@4.6.7)
-      ignore: 7.0.5
-      typebox: 1.1.38
-      yaml: 2.9.0
-    transitivePeerDependencies:
-      - '@modelcontextprotocol/sdk'
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-      - ws
-      - zod
-
-  '@earendil-works/pi-ai@0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.0)(zod@4.6.7)':
+  '@earendil-works/pi-ai@0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)':
     dependencies:
       '@anthropic-ai/sdk': 0.97.1(zod@4.6.7)
       '@aws-sdk/client-bedrock-runtime': 3.1051.0
@@ -8723,7 +8697,7 @@ snapshots:
       '@smithy/node-http-handler': 4.7.3
       http-proxy-agent: 7.0.2(supports-color@7.2.0)
       https-proxy-agent: 7.0.6(supports-color@7.2.0)
-      openai: 6.26.0(ws@8.21.0)(zod@4.6.7)
+      openai: 6.26.0(ws@8.23.0)(zod@4.6.7)
       partial-json: 0.1.7
       typebox: 1.1.38
     transitivePeerDependencies:
@@ -8734,62 +8708,10 @@ snapshots:
       - ws
       - zod
 
-  '@earendil-works/pi-ai@0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.3)(zod@4.6.7)':
+  '@earendil-works/pi-coding-agent@0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)':
     dependencies:
-      '@anthropic-ai/sdk': 0.97.1(zod@4.6.7)
-      '@aws-sdk/client-bedrock-runtime': 3.1051.0
-      '@google/genai': 1.52.0(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)
-      '@mistralai/mistralai': 2.2.6(@opentelemetry/api@1.9.0)
-      '@opentelemetry/api': 1.9.0
-      '@smithy/node-http-handler': 4.7.3
-      http-proxy-agent: 7.0.2(supports-color@7.2.0)
-      https-proxy-agent: 7.0.6(supports-color@7.2.0)
-      openai: 6.26.0(ws@8.21.3)(zod@4.6.7)
-      partial-json: 0.1.7
-      typebox: 1.1.38
-    transitivePeerDependencies:
-      - '@modelcontextprotocol/sdk'
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-      - ws
-      - zod
-
-  '@earendil-works/pi-coding-agent@0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.0)(zod@4.6.7)':
-    dependencies:
-      '@earendil-works/pi-agent-core': 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.0)(zod@4.6.7)
-      '@earendil-works/pi-ai': 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.0)(zod@4.6.7)
-      '@earendil-works/pi-tui': 0.79.10
-      '@silvia-odwyer/photon-node': 0.3.4
-      chalk: 5.6.2
-      cross-spawn: 7.0.6
-      diff: 8.0.4
-      glob: 13.0.6
-      highlight.js: 10.7.3
-      hosted-git-info: 9.0.3
-      ignore: 7.0.5
-      jiti: 2.7.0
-      minimatch: 10.2.5
-      proper-lockfile: 4.1.2
-      semver: 7.8.0
-      strip-ansi: 7.2.0
-      typebox: 1.1.38
-      undici: 8.5.0
-      yaml: 2.9.0
-    optionalDependencies:
-      '@mariozechner/clipboard': 0.3.9
-    transitivePeerDependencies:
-      - '@modelcontextprotocol/sdk'
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-      - ws
-      - zod
-
-  '@earendil-works/pi-coding-agent@0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.3)(zod@4.6.7)':
-    dependencies:
-      '@earendil-works/pi-agent-core': 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.3)(zod@4.6.7)
-      '@earendil-works/pi-ai': 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.21.3)(zod@4.6.7)
+      '@earendil-works/pi-agent-core': 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
+      '@earendil-works/pi-ai': 0.79.10(@modelcontextprotocol/sdk@1.32.0(supports-color@7.2.0)(zod@4.6.7))(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
       '@earendil-works/pi-tui': 0.79.10
       '@silvia-odwyer/photon-node': 0.3.4
       chalk: 5.6.2
@@ -8932,7 +8854,7 @@ snapshots:
       google-auth-library: 10.6.2(supports-color@7.2.0)
       p-retry: 4.6.2
       protobufjs: 8.4.0
-      ws: 8.21.3
+      ws: 8.23.0
     optionalDependencies:
       '@modelcontextprotocol/sdk': 1.32.0(supports-color@7.2.0)(zod@4.6.7)
     transitivePeerDependencies:
@@ -8945,7 +8867,7 @@ snapshots:
       google-auth-library: 10.6.2(supports-color@7.2.0)
       p-retry: 4.6.2
       protobufjs: 8.4.0
-      ws: 8.21.3
+      ws: 8.23.0
     optionalDependencies:
       '@modelcontextprotocol/sdk': 1.32.0(supports-color@7.2.0)(zod@4.6.7)
     transitivePeerDependencies:
@@ -9504,7 +9426,7 @@ snapshots:
       lodash.pickby: 4.6.0
       protobufjs: 8.4.0
       qs: 6.14.2
-      ws: 8.21.3
+      ws: 8.23.0
     transitivePeerDependencies:
       - bufferutil
       - debug
@@ -9691,7 +9613,7 @@ snapshots:
   '@mistralai/mistralai@2.2.6(@opentelemetry/api@1.9.0)':
     dependencies:
       '@opentelemetry/semantic-conventions': 1.41.1
-      ws: 8.21.3
+      ws: 8.23.0
       zod: 4.6.7
       zod-to-json-schema: 3.25.2(zod@4.6.7)
     optionalDependencies:
@@ -10498,9 +10420,9 @@ snapshots:
       '@slack/logger': 4.0.1
       '@slack/web-api': 7.16.0(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0)
       '@types/node': 25.9.1
-      '@types/ws': 8.18.1
+      '@types/ws': 8.18.2
       eventemitter3: 5.0.4
-      ws: 8.21.3
+      ws: 8.23.0
     transitivePeerDependencies:
       - bufferutil
       - debug
@@ -10912,7 +10834,7 @@ snapshots:
 
   '@types/unist@3.0.3': {}
 
-  '@types/ws@8.18.1':
+  '@types/ws@8.18.2':
     dependencies:
       '@types/node': 25.9.1
 
@@ -10982,7 +10904,7 @@ snapshots:
       sirv: 3.0.2
       tinyrainbow: 3.2.0
       vitest: 4.1.11(@opentelemetry/api@1.10.0)(@types/node@25.9.1)(@vitest/browser-playwright@4.1.7)(@vitest/coverage-v8@4.1.7(vitest@4.1.11))(jsdom@29.1.1(@noble/hashes@2.0.1))(vite@8.3.8(@types/node@25.9.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.22.3)(yaml@2.9.0))
-      ws: 8.21.3
+      ws: 8.23.0
     transitivePeerDependencies:
       - bufferutil
       - msw
@@ -11297,7 +11219,7 @@ snapshots:
       protobufjs: 8.4.0
       sharp: 0.33.5
       whatsapp-rust-bridge: 0.5.4
-      ws: 8.21.3
+      ws: 8.23.0
     optionalDependencies:
       audio-decode: 2.2.3
       jimp: 1.6.1(supports-color@7.2.0)
@@ -13189,7 +13111,7 @@ snapshots:
   node-edge-tts@1.2.10(supports-color@7.2.0):
     dependencies:
       https-proxy-agent: 7.0.6(supports-color@7.2.0)
-      ws: 8.21.3
+      ws: 8.23.0
       yargs: 17.7.3
     transitivePeerDependencies:
       - bufferutil
@@ -13286,19 +13208,14 @@ snapshots:
       is-inside-container: 1.0.0
       wsl-utils: 0.1.0
 
-  openai@6.26.0(ws@8.21.0)(zod@4.6.7):
+  openai@6.26.0(ws@8.23.0)(zod@4.6.7):
     optionalDependencies:
-      ws: 8.21.0
+      ws: 8.23.0
       zod: 4.6.7
 
-  openai@6.26.0(ws@8.21.3)(zod@4.6.7):
+  openai@6.38.0(ws@8.23.0)(zod@4.6.7):
     optionalDependencies:
-      ws: 8.21.3
-      zod: 4.6.7
-
-  openai@6.38.0(ws@8.21.3)(zod@4.6.7):
-    optionalDependencies:
-      ws: 8.21.3
+      ws: 8.23.0
       zod: 4.6.7
 
   opus-decoder@0.7.12:
@@ -14565,9 +14482,7 @@ snapshots:
 
   wrappy@1.0.2: {}
 
-  ws@8.21.0: {}
-
-  ws@8.21.3: {}
+  ws@8.23.0: {}
 
   wsl-utils@0.1.0:
     dependencies:
@@ -14636,7 +14551,7 @@ snapshots:
       semver: 7.8.5
       spark-md5: 3.0.2
       tough-cookie: 4.1.3
-      ws: 8.21.3
+      ws: 8.23.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
